@@ -27,7 +27,7 @@ let Database = require('./classes/Database');
 
 let func = new Func();
 
-class Perceptor extends Template {
+class Kerds extends Template {
     constructor(params) {
         super();
         this.states = {};
@@ -138,7 +138,7 @@ class Perceptor extends Template {
         else {
             let server;
             if (type.toLowerCase() == 'https') {
-                if (!perceptor.isset(options)) {
+                if (!this.isset(options)) {
                     console.log('HTTPS should have SSL options');
                     return;
                 }
@@ -201,7 +201,7 @@ class Perceptor extends Template {
 
     recordSession(period) {
         this.allowSessions = true;
-        perceptor.runParallel({
+        this.runParallel({
             start: this.sessionsManager.startSessions(period),
             clear: this.sessionsManager.clearOldSessions()
         }, result => {
@@ -244,7 +244,7 @@ class Perceptor extends Template {
 }
 
 module.exports = {
-    Perceptor,
+    Kerds,
     Func,
     NeuralNetwork,
     Matrix,

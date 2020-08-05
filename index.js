@@ -235,7 +235,7 @@ class Perceptor extends Template {
         for (let i = 0; i < args.length; i++) {
             arg = args[i];
             if (arg[0] == start) {
-                commands[arg.replace(start, '')] = args[i+1];
+                commands[arg.replace(start, '')] = args[i + 1];
             }
         }
 
@@ -251,4 +251,8 @@ module.exports = {
     SessionsManager,
     Database,
     Template
+}
+
+exports.printMsg = function () {
+    console.log("This is a message from the demo package");
 }

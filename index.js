@@ -199,10 +199,10 @@ class Kerds extends Template {
         return this.states[url];
     }
 
-    recordSession(period) {
+    recordSession(period, remember) {
         this.allowSessions = true;
         this.runParallel({
-            start: this.sessionsManager.startSessions(period),
+            start: this.sessionsManager.startSessions(period, remember),
             clear: this.sessionsManager.clearOldSessions()
         }, result => {
         });

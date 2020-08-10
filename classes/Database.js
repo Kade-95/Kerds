@@ -122,7 +122,7 @@ module.exports = class Database {
                     return db.db(this.name).collection(params.collection);
                 })
                 .then((collection) => {
-                    if (func.isset(params.many)) return collection.updateMany(params.query, { $set: params.new });
+                    if (func.isset(params.many)) return collection.updateMany(params.query, params.options);
                     else return collection.updateOne(params.query, params.options);
                 })
                 .then((result) => {
@@ -635,6 +635,10 @@ module.exports = class Database {
                 params.callBack(collection);
             });
         });
+    }
+
+    say(){
+        console.log(this.name);
     }
 }
 

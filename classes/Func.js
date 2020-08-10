@@ -1421,7 +1421,7 @@ module.exports = class Func {
         return vars;
     }
 
-    extract(arr, start, end) {
+    extract(arr = '', start, end) {
         var userIndex = typeof start === 'number',
             i,
             j;

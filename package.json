@@ -1,6 +1,6 @@
 {
-  "name": "kerds",
-  "version": "1.0.1",
+  "name": "@perceptor/kerds",
+  "version": "1.0.0",
   "description": "Backend Functionalities",
   "main": "index.js",
   "dependencies": {
@@ -11,7 +11,9 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon index.js",
-    "patch": "npm version patch"
+    "patch": "npm version patch",
+    "minor": "npm version minor",
+    "major": "npm version major"
   },
   "author": "thekade",
   "license": "ISC",

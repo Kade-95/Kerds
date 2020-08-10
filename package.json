@@ -1,5 +1,5 @@
 {
-  "name": "@thekade/kerds",
+  "name": "kerds",
   "version": "1.0.0",
   "description": "Backend Functionalities",
   "main": "index.js",

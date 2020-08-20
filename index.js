@@ -53,12 +53,10 @@ class Kerds extends Template {
             '.otf': 'application/font-otf',
             '.svg': 'application/image/svg+xml'
         };
-
         this.appPages = [];
         this.handleRequests = () => {
 
         }
-        this.mimeTypes = [];
     }
 
     permit(req, res, allowed) {
@@ -84,7 +82,12 @@ class Kerds extends Template {
         let filename = '.' + this.q.pathname;
         let tmp = filename.lastIndexOf('.');
         let ext = filename.slice(tmp).toLowerCase();
-        let contentType = this.mimeTypes[ext] || 'application/octet-stream';
+        let contentType = this.mimeTypes[ext];
+        
+        if (!this.isset(contentType)) {
+            contentType = 'application/octet-stream';
+        }
+
         this.permit(req, res, allowed);
 
         if (req.method == 'POST') {
@@ -247,6 +250,6 @@ module.exports = {
 exports.printMsg = function () {
     console.log("This is a message from the demo package");
 }
-let dbDetails = { port: "27017", name: 'inventory'};
+let dbDetails = { port: "27017", name: 'inventory' };
 let kerds = new Kerds();
-kerds.recordSession({period: 24 * 60 * 60 * 1000, remember: ['account', 'user'], server: dbDetails});
+kerds.recordSession({ period: 24 * 60 * 60 * 1000, remember: ['account', 'user'], server: dbDetails });

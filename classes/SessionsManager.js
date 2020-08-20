@@ -23,8 +23,12 @@ module.exports = class SessionsManager {
     startSessions(params) {
         db = new Database(params.server);
         persistence = new Persistence(params.server);
-        this.remember = params.remember;
-        this.period = params.period || 60000000;
+        this.remember = params.remember || {};
+        
+        this.period = params.period;
+        if(func.isset(this.period)){
+            this.period = 60000000;
+        }
 
         return new Promise((resolve, reject) => {
             db.find({ collection: 'sessions', query: {}, options: { projection: { _id: 0 } }, many: {} }).then(result => {//Get all the stored sessions

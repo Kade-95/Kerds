@@ -28,12 +28,12 @@ let Database = require('./classes/Database');
 let func = new Func();
 
 class Kerds extends Template {
-    constructor(params) {
+    constructor() {
         super();
         this.states = {};
         this.Matrix = Matrix;
         this.NeuralNetwork = NeuralNetwork;
-        this.sessionsManager = new SessionsManager(params);
+        this.sessionsManager = new SessionsManager();
         this.allowSessions = false;
         this.mimeTypes = {
             '.html': 'text/html',
@@ -53,8 +53,12 @@ class Kerds extends Template {
             '.otf': 'application/font-otf',
             '.svg': 'application/image/svg+xml'
         };
-        this.object.copy(params, this);
-        this.db = new Database(this.server);
+
+        this.appPages = [];
+        this.handleRequests = () => {
+
+        }
+        this.mimeTypes = [];
     }
 
     permit(req, res, allowed) {
@@ -92,7 +96,7 @@ class Kerds extends Template {
 
             req.on('data', this.onPosting).on('end', this.onPosted);
         }
-        else if (filename == './' || ext == '.html' || ext == '.htm') {
+        else if (filename == './' || this.appPages.includes(filename.replace('./', ''))) {
             // if page is index
             this.sessionsManager.getCookies(req);
             let sessionId = this.sessionsManager.createNODESSID(res, true);
@@ -117,49 +121,35 @@ class Kerds extends Template {
         }
     }
 
-    createServer(port, callback, type, allowed, options) {
-        if (!cluster.isMaster) {
-            let numWorkers = os.cpus().length;
-
-            for (let i = 0; i < numWorkers; i++) {
-                cluster.fork();
+    createServer(params = { port: '', protocol: '', domains: [], httpsOptions: {}, response: () => { } }, callback = () => { }) {
+        let server;
+        if (params.protocol.toLowerCase() == 'https') {
+            if (!this.isset(params.httpsOptions)) {
+                console.log('HTTPS should have SSL options');
+                return;
             }
 
-            cluster.on('online', worker => {
-                console.log('Worker ' + worker.process.pid + ' is online');
-            });
-
-            cluster.on('exit', (worker, code, signal) => {
-                console.log('Worker ' + worker.process.pid + ' died with code: ' + code + ', and signal ' + signal);
-                console.log('Starting a new worker');
-                cluster.fork();
+            server = https.createServer(params.httpsOptions, (req, res) => {
+                if (this.isset(params.response)) {
+                    this.reply(req, res, params.response, params.domains);
+                }
             });
         }
         else {
-            let server;
-            if (type.toLowerCase() == 'https') {
-                if (!this.isset(options)) {
-                    console.log('HTTPS should have SSL options');
-                    return;
+            server = http.createServer((req, res) => {
+                if (this.isset(params.response)) {
+                    this.reply(req, res, params.response, params.domains);
                 }
-
-                server = https.createServer(options, (req, res) => {
-                    this.reply(req, res, callback, allowed);
-                });
-            }
-            else {
-                server = http.createServer((req, res) => {
-                    this.reply(req, res, callback, allowed);
-                });
-            }
-
-
-            server.on('error', err => {
-                console.log(`Port ${port} is in use`)
-            }).listen(port, '0.0.0.0', () => {
-                console.log(`${type} Server Running on Port : ${port}`);
             });
         }
+
+        server.on('error', err => {
+            console.log(`Port ${params.port} is in use`)
+        }).listen(params.port, '0.0.0.0', () => {
+            console.log(`${params.protocol} Server Running on Port : ${params.port}`);
+        });
+
+        callback(server);
     }
 
     onPosting(data) {
@@ -199,10 +189,10 @@ class Kerds extends Template {
         return this.states[url];
     }
 
-    recordSession(period, remember) {
+    recordSession(params = { period: '', remember: '', server: { address: '', name: '', user: '', password: '' } }) {
         this.allowSessions = true;
         this.runParallel({
-            start: this.sessionsManager.startSessions(period, remember),
+            start: this.sessionsManager.startSessions(params),
             clear: this.sessionsManager.clearOldSessions()
         }, result => {
         });

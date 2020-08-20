@@ -8,8 +8,7 @@ let func = new Func();
 let persistence;
 
 module.exports = class SessionsManager {
-    constructor(params) {
-        this.params = params;
+    constructor() {
         this.actualSessions = {};
         this.sessions = func.object.onChanged(this.actualSessions, (target, p, d) => {
             this.write(target.key)
@@ -19,13 +18,13 @@ module.exports = class SessionsManager {
         this.cookies = {};
         this.sessionID;
         this.currentSession;
-        db = new Database(params.server);
-        persistence = new Persistence(params.server);
     }
 
-    startSessions(period, remember) {
-        this.remember = remember;
-        this.period = period || 60000000;
+    startSessions(params) {
+        db = new Database(params.server);
+        persistence = new Persistence(params.server);
+        this.remember = params.remember;
+        this.period = params.period || 60000000;
         return new Promise((resolve, reject) => {
             db.find({ collection: 'sessions', query: {}, options: { projection: { _id: 0 } }, many: {} }).then(result => {//Get all the stored sessions
                 for (var session of result) {
@@ -165,7 +164,7 @@ module.exports = class SessionsManager {
         return db.delete({ collection: 'sessions', query: { key } }).then(result => {
             let deleted = result.result.ok == 1;
             if (deleted) {
-                delete this.sessions[id];
+                delete this.sessions[key];
             }
             return deleted;
         });

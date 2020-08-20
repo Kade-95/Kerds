@@ -5,7 +5,7 @@ let db;
 
 module.exports = class PersistentSessions {
 
-    constructor(server) {
+    constructor(server = {}) {
         db = new Database(server);
         this.collection = 'persistence';
         this.expires = new Date(new Date().getTime() + (1000 * 3600 * 24 * 30)).toUTCString();

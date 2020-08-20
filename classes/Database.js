@@ -11,7 +11,7 @@ module.exports = class Database {
         this.name = details.name;
         this.options = details.options;
         this.port = details.port;
-        this.local = details.local || true;
+        this.local = details.local || false;
 
         this.connectionString = this.getConnectionString();
         this.client = new mongoClient(this.connectionString, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -29,7 +29,7 @@ module.exports = class Database {
             connectionString = `${this.mongoLocal}localhost:${this.port}/${this.name}`;
         }
         else{
-            connectionString = `${this.mongo}${this.user}:${this.password}@${this.address}/${this.name}`;
+            connectionString = `${this.mongoCloud}${this.user}:${this.password}@${this.address}/${this.name}`;
             if (func.isset(this.options)) {
                 connectionString += `?${this.options}`;
             }

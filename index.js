@@ -83,7 +83,7 @@ class Kerds extends Template {
         let tmp = filename.lastIndexOf('.');
         let ext = filename.slice(tmp).toLowerCase();
         let contentType = this.mimeTypes[ext];
-
+        
         if (!this.isset(contentType)) {
             contentType = 'application/octet-stream';
         }
@@ -250,4 +250,3 @@ module.exports = {
 exports.printMsg = function () {
     console.log("This is a message from the demo package");
 }
-

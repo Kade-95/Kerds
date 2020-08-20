@@ -191,9 +191,10 @@ class Kerds extends Template {
 
     recordSession(params = { period: '', remember: '', server: { address: '', name: '', user: '', password: '' } }) {
         this.allowSessions = true;
+
         this.runParallel({
             start: this.sessionsManager.startSessions(params),
-            clear: this.sessionsManager.clearOldSessions()
+            // clear: this.sessionsManager.clearOldSessions()
         }, result => {
         });
     }
@@ -246,3 +247,6 @@ module.exports = {
 exports.printMsg = function () {
     console.log("This is a message from the demo package");
 }
+let dbDetails = { port: "27017", name: 'inventory'};
+let kerds = new Kerds();
+kerds.recordSession({period: 24 * 60 * 60 * 1000, remember: ['account', 'user'], server: dbDetails});

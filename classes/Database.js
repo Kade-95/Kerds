@@ -2,17 +2,21 @@ let Func = require('./Func');
 let func = new Func();
 
 module.exports = class Database {
-    constructor(details = { address: '', name: '', user: '', password: '' }) {
-        this.mongo = 'mongodb+srv://';
+    constructor(details = { address: '', name: '', user: '', password: '', port: '', local: true }) {
+        this.mongoCloud = 'mongodb+srv://';
+        this.mongoLocal = 'mongodb://';
         this.user = details.user || '';
         this.password = details.password || '';
         this.address = details.address;
         this.name = details.name;
         this.options = details.options;
+        this.port = details.port;
+        this.local = details.local || true;
 
         this.connectionString = this.getConnectionString();
         this.client = new mongoClient(this.connectionString, { useNewUrlParser: true, useUnifiedTopology: true })
     }
+    // mongodb://localhost:27017/
     // mongodb+srv://me:<password>@test.vqusx.gcp.mongodb.net/test
     setName(name) {
         this.name = name;
@@ -20,10 +24,17 @@ module.exports = class Database {
     }
 
     getConnectionString() {
-        let connectionString = `${this.mongo}${this.user}:${this.password}@${this.address}/${this.name}`;
-        if(func.isset(this.options)){
-            connectionString += `?${this.options}`;
+        let connectionString;
+        if (this.local) {
+            connectionString = `${this.mongoLocal}localhost:${this.port}/${this.name}`;
         }
+        else{
+            connectionString = `${this.mongo}${this.user}:${this.password}@${this.address}/${this.name}`;
+            if (func.isset(this.options)) {
+                connectionString += `?${this.options}`;
+            }
+        }
+        
         return encodeURI(connectionString);
     }
 

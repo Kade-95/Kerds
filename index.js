@@ -235,6 +235,11 @@ class Kerds extends Template {
 
         return commands;
     }
+
+    timeLog(...data){
+        let time = `[${this.time()}]:`;
+        console.log(time, ...data);
+    }
 }
 
 module.exports = {
@@ -250,3 +255,4 @@ module.exports = {
 exports.printMsg = function () {
     console.log("This is a message from the demo package");
 }
+

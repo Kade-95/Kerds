@@ -1,2 +1,4 @@
-let Kerds = require('./index.js');
-let k = new Kerds();
+let { Kerds, Database } = require('./index');
+let kerds = new Kerds();
+
+kerds.timeLog('Hello world')

@@ -24,8 +24,10 @@ let NeuralNetwork = require('./classes/NeuralNetwork');
 let Template = require('./classes/Template');
 let SessionsManager = require('./classes/SessionsManager');
 let Database = require('./classes/Database');
-
-let func = new Func();
+let arrayLibrary = require('./functions/Array');
+let objectLibrary = require('./functions/Objects');
+let mathLibrary = require('./functions/Math');
+let requestsLibrary = require('./functions/Requests');
 
 class Kerds extends Template {
     constructor() {
@@ -34,6 +36,10 @@ class Kerds extends Template {
         this.Matrix = Matrix;
         this.NeuralNetwork = NeuralNetwork;
         this.sessionsManager = new SessionsManager();
+        this.array = arrayLibrary();
+        this.object = objectLibrary();
+        this.math = mathLibrary();
+        this.request = requestsLibrary();
         this.allowSessions = false;
         this.mimeTypes = {
             '.html': 'text/html',
@@ -174,8 +180,8 @@ class Kerds extends Template {
 
     onPosted() {
         // post the request
-        var boundary = func.extract(this.headers['content-type'], ' boundary=');
-        var form = func.parseForm(boundary, this.data);
+        var boundary = this.request.extract(this.headers['content-type'], ' boundary=');
+        var form = this.request.parseForm(boundary, this.data);
 
         if (typeof this.handleRequests == 'function') {
             this.handleRequests(this, this.res, form);

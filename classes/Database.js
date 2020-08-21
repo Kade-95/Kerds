@@ -1,5 +1,6 @@
 let Func = require('./Func');
 let func = new Func();
+let arrayLib = require('./../functions/Array');
 
 module.exports = class Database {
     constructor(details = { address: '', name: '', user: '', password: '', port: '', local: true }) {
@@ -425,7 +426,7 @@ module.exports = class Database {
                                     });
                                 }
                                 else {
-                                    found = func.array.find(found.contents, item => {
+                                    found = arrayLib().find(found.contents, item => {
                                         let flag = true;
                                         for (let n in params.query) {
                                             if (item[n] != params.query[n]) flag = false;

@@ -2,15 +2,17 @@ let Func = require('./Func');
 let Database = require('./Database');
 let Session = require('./Session');
 let Persistence = require('./PersistentSessions');
-
+let objectLib = require('./../functions/Objects');
 let db;
 let func = new Func();
 let persistence;
 
+
+
 module.exports = class SessionsManager {
     constructor() {
         this.actualSessions = {};
-        this.sessions = func.object.onChanged(this.actualSessions, (target, p, d) => {
+        this.sessions = objectLib().onChanged(this.actualSessions, (target, p, d) => {
             this.write(target.key)
                 .then()
                 .catch(console.log);

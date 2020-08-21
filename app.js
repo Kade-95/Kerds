@@ -1,1 +1,0 @@
-let Perceptor = require('./index');

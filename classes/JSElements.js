@@ -5,7 +5,48 @@ module.exports = class JSElements extends Period {
         super();
     }
 
-    createFromObject(object, singleParent) {
+    loadCss(href = '') {
+        document.head.makeElement({ element: 'link', attributes: { rel: 'stylesheet', type: 'text/css', href } });
+    }
+
+    jsonForm(form) {
+        let json = {};
+        let perform = (element) => {
+            let children = element.children;
+            for (let i = 0; i < children.length; i++) {
+                perform(children[i]);
+            }
+            if (element.hasAttribute('name')) {
+                if (element.type == 'file') {
+                    if (element.hasAttribute('multiple')) {
+                        json[element.getAttribute('name')] = element.files;
+                    }
+                    else {
+                        json[element.getAttribute('name')] = element.files[0];
+                    }
+                }
+                else {
+                    json[element.getAttribute('name')] = element.value;
+                }
+            }
+        }
+
+        perform(form);
+        return json;
+    }
+
+    jsonElement(_element_) {
+        let element = _element_.nodeName.toLowerCase();
+        let attributes = _element_.getAttributes();
+        attributes.style = _element_.css();
+        let children = [];
+        for (let i = 0; i < _element_.children.length; i++) {
+            children.push(_element_.children[i].toJson());
+        }
+        return { element, attributes, children }
+    }
+
+    createFromObject(object = {}, singleParent) {
         let created, name;
         if (object.element instanceof Element) {
             created = object.element;
@@ -68,20 +109,7 @@ module.exports = class JSElements extends Period {
         return created;
     }
 
-    jsonForm(form) {
-        let formData = new FormData(form);
-        var json = {};
-        try {
-            for (var [key, value] of formData.entries()) {
-                json[key] = value;
-            }
-        } catch (error) {
-            return null;
-        }
-        return json;
-    }
-
-    createFromHTML(htmlString, singleParent) {
+    createFromHTML(htmlString = '', singleParent) {
         let parser = new DOMParser();
         let html = parser.parseFromString(htmlString, 'text/html');
 
@@ -94,11 +122,19 @@ module.exports = class JSElements extends Period {
             created = html.body;
         }
 
-        if (this.isset(singleParent)) singleParent.attachElement(created, html.attachment);
+        if (this.isset(singleParent)) singleParent.attachElement(created, singleParent.attachment);
         return created;
     }
 
-    getElement(singleParam, singleParent) {
+    createPerceptorElement(object, singleParent) {
+        let created = this[object.perceptorElement](object.params);
+        if (this.isset(singleParent)) {
+            singleParent.attachElement(created, object.attachment);
+        }
+        return created;
+    }
+
+    getElement(singleParam = { element: '', attributes: {} }, singleParent) {
         var element;
         //if params is a HTML String
         if (typeof singleParam == 'string') {
@@ -110,16 +146,20 @@ module.exports = class JSElements extends Period {
         }
         //if params is object
         else if (typeof singleParam == 'object') {
-            element = this.createFromObject(singleParam, singleParent);
+            if (singleParam.perceptorElement) {
+                element = this.createPerceptorElement(singleParam, singleParent);
+            }
+            else {
+                element = this.createFromObject(singleParam, singleParent);
+            }
         }
 
-        if (!this.isset(element.setKey)) console.log(element);
-
-        element.setKey();
+        if (!this.isset(element.setKey)) element.setKey();
 
         if (this.isset(singleParam.list)) {
-            element.makeElement({ element: 'datalist', attributes: { id: element.dataset.domKey }, options: singleParam.list });
+            let list = element.makeElement({ element: 'datalist', options: singleParam.list });
             element.setAttribute('list', element.dataset.domKey);
+            list.setAttribute('id', element.dataset.domKey);
         }
 
         if (this.isset(singleParam.state)) {
@@ -135,7 +175,7 @@ module.exports = class JSElements extends Period {
         return element;
     };
 
-    createElement(params, parent) {
+    createElement(params = { element: '', attributes: {} }, parent = new Element()) {
         if (Array.isArray(params)) {
             let elements = [];
             for (let param of params) {
@@ -158,10 +198,16 @@ module.exports = class JSElements extends Period {
     validateFormInput(element) {
         var type = element.getAttribute('type');
         var value = element.value;
+
+        if (this.isnull(type)) {
+            return !this.isSpaceString(value);
+        }
+
+        type = type.toLowerCase();
         if (type == 'file') {
             return value != '';
         }
-        else if (type == 'text' || this.isnull(type)) {
+        else if (type == 'text') {
             return !this.isSpaceString(value);
         }
         else if (type == 'date') {
@@ -180,12 +226,16 @@ module.exports = class JSElements extends Period {
         else if (type == 'password') {
             return this.isPasswordValid(value);
         }
+        else {
+            return !this.isSpaceString(value);
+        }
     }
 
     validateFormSelect(element) {
         if (element.value == 0 || element.value.toLowerCase() == 'null') {
             return false;
         }
+
         return true;
     }
 
@@ -222,12 +272,12 @@ module.exports = class JSElements extends Period {
             if (elements[i].getAttribute('ignore') == 'true') {
                 continue;
             }
-            
+
             if (this.isset(options.names)) {
-                if(options.names.includes(elementName)){
+                if (options.names.includes(elementName)) {
                     flag = validateMe(elements[i]);
                 }
-                else{
+                else {
                     continue;
                 }
             }
@@ -262,7 +312,7 @@ module.exports = class JSElements extends Period {
         }
     }
 
-    imageToJson(file, callBack) {
+    imageToJson(file, callBack = () => { }) {
         let fileReader = new FileReader();
         let myfile = {};
         fileReader.onload = (event) => {

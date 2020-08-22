@@ -1,53 +1,52 @@
-let Func = require('./Func');
+let Func = require('../classes/Func');
 let func = new Func();
-let arrayLib = require('./../functions/Array');
+let arrayLib = require('./Array');
+// mongodb://localhost:<port>/
+// mongodb+srv://<username>:<password>@address/name?options
 
-module.exports = class Database {
-    constructor(details = { address: '', name: '', user: '', password: '', port: '', local: true }) {
-        this.mongoCloud = 'mongodb+srv://';
-        this.mongoLocal = 'mongodb://';
-        this.user = details.user || '';
-        this.password = details.password || '';
-        this.address = details.address;
-        this.name = details.name;
-        this.options = details.options;
-        this.port = details.port;
-        this.local = details.local || false;
+module.exports = function Database(details = { address: '', name: '', user: '', password: '', port: '', local: true }) {
+    let self = {};
+    self.mongoCloud = 'mongodb+srv://';
+    self.mongoLocal = 'mongodb://';
+    self.user = details.user || '';
+    self.password = details.password || '';
+    self.address = details.address;
+    self.name = details.name;
+    self.options = details.options;
+    self.port = details.port;
+    self.local = details.local || false;    
 
-        this.connectionString = this.getConnectionString();
-        this.client = new mongoClient(this.connectionString, { useNewUrlParser: true, useUnifiedTopology: true })
-    }
-    // mongodb://localhost:27017/
-    // mongodb+srv://me:<password>@test.vqusx.gcp.mongodb.net/test
-    setName(name) {
-        this.name = name;
-        this.connectionString = this.getConnectionString();
-    }
-
-    getConnectionString() {
+    self.getConnectionString = function () {
         let connectionString;
-        if (this.local) {
-            connectionString = `${this.mongoLocal}localhost:${this.port}/${this.name}`;
+        if (self.local) {
+            connectionString = `${self.mongoLocal}localhost:${self.port}/${self.name}`;
         }
-        else{
-            connectionString = `${this.mongoCloud}${this.user}:${this.password}@${this.address}/${this.name}`;
-            if (func.isset(this.options)) {
-                connectionString += `?${this.options}`;
+        else {
+            connectionString = `${self.mongoCloud}${self.user}:${self.password}@${self.address}/${self.name}`;
+            if (func.isset(self.options)) {
+                connectionString += `?${self.options}`;
             }
         }
-        
+
         return encodeURI(connectionString);
     }
 
-    erase() {
-        return this.open({}, db => {
-            return db.db(this.name).dropDatabase();
+    self.connectionString = self.getConnectionString();
+
+    self.setName = function (name) {
+        self.name = name;
+        self.connectionString = self.getConnectionString();
+    }
+
+    self.erase = function () {
+        return self.open({}, db => {
+            return db.db(self.name).dropDatabase();
         });
     }
 
-    open(params = { url: '', options: { useNewUrlParser: true, useUnifiedTopology: true } }, callBack) {
+    self.open = function (params = { url: '', options: { useNewUrlParser: true, useUnifiedTopology: true } }, callBack) {
         // open database for operations
-        params.url = params.url || this.connectionString;
+        params.url = params.url || self.connectionString;
         params.options = params.options || { useNewUrlParser: true, useUnifiedTopology: true }
         if (func.isset(callBack)) {
             return new Promise((resolve, reject) => {
@@ -58,7 +57,7 @@ module.exports = class Database {
                     else {
                         callBack(db)
                             .then((result) => {
-                                this.close(db);
+                                self.close(db);
                                 resolve(result);
                             })
                             .catch(error => {
@@ -78,14 +77,14 @@ module.exports = class Database {
         }
     }
 
-    close(db) {
+    self.close = function (db) {
         // close database 
         if (db) {
             db.close();
         }
     }
 
-    insert(params = { collection: '', query: {}, getInserted: false }) {
+    self.insert = function (params = { collection: '', query: {}, getInserted: false }) {
         // insert into database        
         let database = null;
         let value;
@@ -96,10 +95,10 @@ module.exports = class Database {
             if (!func.isset(params.query)) {
                 reject('no_query');
             }
-            this.open()
+            self.open()
                 .then((db) => {
                     database = db;
-                    return db.db(this.name).collection(params.collection);
+                    return db.db(self.name).collection(params.collection);
                 })
                 .then((collection) => {
                     if (Array.isArray(params.query)) value = collection.insertMany(params.query);
@@ -120,7 +119,7 @@ module.exports = class Database {
         });
     }
 
-    update(params = { collection: '', query: {}, options: {}, many: false }) {
+    self.update = function (params = { collection: '', query: {}, options: {}, many: false }) {
         // update database
         let database = null;
         return new Promise((resolve, reject) => {
@@ -137,10 +136,10 @@ module.exports = class Database {
                 reject('no_options');
             }
 
-            this.open()
+            self.open()
                 .then((db) => {
                     database = db;
-                    return db.db(this.name).collection(params.collection);
+                    return db.db(self.name).collection(params.collection);
                 })
                 .then((collection) => {
                     if (func.isset(params.many)) return collection.updateMany(params.query, params.options);
@@ -157,15 +156,15 @@ module.exports = class Database {
         });
     }
 
-    save(params = { collection: '', query: {}, check: {}, options: {}, many: false }) {
+    self.save = function (params = { collection: '', query: {}, check: {}, options: {}, many: false }) {
         // save or replace the content of a document
-        return this.exists({ collection: params.collection, query: params.check })
+        return self.exists({ collection: params.collection, query: params.check })
             .then(result => {
                 if (result) {
-                    return this.update({ collection: params.collection, query: params.check, options: { '$set': params.query } })
+                    return self.update({ collection: params.collection, query: params.check, options: { '$set': params.query } })
                 }
                 else {
-                    return this.insert(params);
+                    return self.insert(params);
                 }
             })
             .then(result => {
@@ -173,7 +172,7 @@ module.exports = class Database {
             });
     }
 
-    replace(params = { collection: '', query: {}, new: {} }) {
+    self.replace = function (params = { collection: '', query: {}, new: {} }) {
         // insert or update the content of document
         let database = null;
         return new Promise((resolve, reject) => {
@@ -189,9 +188,9 @@ module.exports = class Database {
             if (!func.isset(params.new)) {
                 reject('no_new');
             }
-            this.open().then((db) => {
+            self.open().then((db) => {
                 database = db;
-                return db.db(this.name).collection(params.collection);
+                return db.db(self.name).collection(params.collection);
             }).then((collection) => {
                 return collection.replaceOne(params.query, params.new);
             }).then((result) => {
@@ -204,7 +203,7 @@ module.exports = class Database {
         });
     }
 
-    aggregate(params = { collection: '', query: {} }) {
+    self.aggregate = function (params = { collection: '', query: {} }) {
         // perform an aggregation on database
         let database = null;
         return new Promise((resolve, reject) => {
@@ -217,9 +216,9 @@ module.exports = class Database {
             if (!func.isset(params.query)) {
                 reject('no_query');
             }
-            this.open().then((db) => {
+            self.open().then((db) => {
                 database = db;
-                return db.db(this.name).collection(params.collection);
+                return db.db(self.name).collection(params.collection);
             }).then((collection) => {
                 return collection.aggregate(params.query).toArray();
             }).then((result) => {
@@ -232,7 +231,7 @@ module.exports = class Database {
         });
     }
 
-    join(params = { collection: '', query: { lookup: { from: '', localField: '', foreignField: '', as: '' } } }) {
+    self.join = function (params = { collection: '', query: { lookup: { from: '', localField: '', foreignField: '', as: '' } } }) {
         // join documents 
         let database = null;
         return new Promise((resolve, reject) => {
@@ -261,10 +260,10 @@ module.exports = class Database {
                 reject('no_as');
             }
 
-            this.open()
+            self.open()
                 .then((db) => {
                     database = db;
-                    return db.db(this.name).collection(params.collection);
+                    return db.db(self.name).collection(params.collection);
                 })
                 .then((collection) => {
                     let components = [],
@@ -288,10 +287,10 @@ module.exports = class Database {
         });
     }
 
-    exists(params = { collection: '', query: {} }) {
+    self.exists = function (params = { collection: '', query: {} }) {
         // check if document exists
         return new Promise((resolve, reject) => {
-            this.find(params).then((res) => {
+            self.find(params).then((res) => {
                 if (!func.isnull(res)) resolve(true)
                 else resolve(false)
             }).catch(err => {
@@ -300,11 +299,11 @@ module.exports = class Database {
         });
     }
 
-    ifNotExist(params = { collection: '', query: {}, check: [{}], action: '' }) {
+    self.ifNotExist = function (params = { collection: '', query: {}, check: [{}], action: '' }) {
         let found = false;
         return new Promise(async (resolve, reject) => {
             for (let q of params.check) {
-                found = await this.exists({ collection: params.collection, query: q });
+                found = await self.exists({ collection: params.collection, query: q });
                 if (found) {
                     resolve({ found: Object.keys(q) });
                     break;
@@ -312,7 +311,7 @@ module.exports = class Database {
             }
 
             if (!found) {
-                this[params.action](params).then(worked => {
+                self[params.action](params).then(worked => {
                     resolve(worked);
                 }).catch(error => {
                     reject(error)
@@ -321,12 +320,12 @@ module.exports = class Database {
         });
     }
 
-    ifIExist(params = { collection: '', query: {}, check: [{}], action: '' }) {
+    self.ifIExist = function (params = { collection: '', query: {}, check: [{}], action: '' }) {
         let exists = false;
         return new Promise(async (resolve, reject) => {
             for (let i = 0; i < params.check.length; i++) {//loop through the check queries
                 let query = params.check[i].query;
-                let allFound = await this.find({ collection: params.collection, query, many: true });//find them all
+                let allFound = await self.find({ collection: params.collection, query, many: true });//find them all
                 if (allFound.length) {//if found
                     for (let found of allFound) {//loop through all the found items
                         for (let [key, value] of Object.entries(params.check[i].against)) {
@@ -341,7 +340,7 @@ module.exports = class Database {
             }
 
             if (!exists) {
-                this[params.action](params).then(worked => {
+                self[params.action](params).then(worked => {
                     resolve(worked);
                 }).catch(error => {
                     reject(error)
@@ -350,7 +349,7 @@ module.exports = class Database {
         });
     }
 
-    find(params = { collection: '', query: {}, many: false, options: { projection: {} } }) {
+    self.find = function (params = { collection: '', query: {}, many: false, options: { projection: {} } }) {
         // find in database
         let database = null;
         let value;
@@ -370,10 +369,10 @@ module.exports = class Database {
             }
 
             if (!params.collection.includes('#')) {
-                this.open()
+                self.open()
                     .then((db) => {
                         database = db;
-                        return db.db(this.name).collection(params.collection);
+                        return db.db(self.name).collection(params.collection);
                     })
                     .then((collection) => {
                         if (func.isset(params.many)) {
@@ -400,10 +399,10 @@ module.exports = class Database {
             }
             else {
                 let [collection, name] = params.collection.split('#');
-                this.open()
+                self.open()
                     .then((db) => {
                         database = db;
-                        return db.db(this.name).collection(collection);
+                        return db.db(self.name).collection(collection);
                     })
                     .then((collection) => {
                         value = collection.findOne({ name });
@@ -480,7 +479,7 @@ module.exports = class Database {
         });
     }
 
-    delete(params = { collection: '', query: {}, many: false }) {
+    self.delete = function (params = { collection: '', query: {}, many: false }) {
         // delete from database
         let database = null;
 
@@ -492,10 +491,10 @@ module.exports = class Database {
                 reject('no_query');
             }
 
-            this.open()
+            self.open()
                 .then((db) => {
                     database = db;
-                    return db.db(this.name).collection(params.collection);
+                    return db.db(self.name).collection(params.collection);
                 })
                 .then((collection) => {
                     if (func.isset(params.many)) return collection.deleteMany(params.query);
@@ -512,13 +511,13 @@ module.exports = class Database {
         });
     }
 
-    recycle(params = { collection: '', query: {}, many: false }) {
+    self.recycle = function(params = { collection: '', query: {}, many: false }) {
         //get the data to delete and insert it into recycle bin before deleting it
         return new Promise((resolve, reject) => {
-            this.find(params).then(result => {
+            self.find(params).then(result => {
                 let toInsert = { collection: 'recycle', query: { _id: result._id, collection: params.collection, query: result } };
-                this.insert(toInsert).then(result => {
-                    this.delete(params).then(result => {
+                self.insert(toInsert).then(result => {
+                    self.delete(params).then(result => {
                         resolve(result);
                     }).catch(err => {
                         resolve('Error Inserting data to recycle => ' + err);
@@ -532,12 +531,12 @@ module.exports = class Database {
         });
     }
 
-    restore(params = { id: '' }) {
+    self.restore = function(params = { id: '' }) {
         //get the data from recycle bin restore it to collection then clear it from recycle bin
         return new Promise((resolve, reject) => {
-            this.find({ collection: 'recycle', query: { _id: new ObjectId(params.id) }, projection: { _id: 0 } }).then(result => {
-                this.insert(result).then(result => {
-                    this.delete({ collection: 'recycle', query: { _id: new ObjectId(params.id) } }).then(result => {
+            self.find({ collection: 'recycle', query: { _id: new ObjectId(params.id) }, projection: { _id: 0 } }).then(result => {
+                self.insert(result).then(result => {
+                    self.delete({ collection: 'recycle', query: { _id: new ObjectId(params.id) } }).then(result => {
                         resolve(result);
                     }).catch(err => {
                         reject('Error clearing data from recylce bin=> ' + err);
@@ -551,10 +550,10 @@ module.exports = class Database {
         });
     }
 
-    dropCollection(collection) {
+    self.dropCollection = function(collection) {
         // delete database
-        return this.open({}, db => {
-            return db.db(this.name).dropCollection(collection)
+        return self.open({}, db => {
+            return db.db(self.name).dropCollection(collection)
                 .then(result => {
                     return result == true;
                 })
@@ -564,16 +563,16 @@ module.exports = class Database {
         });
     }
 
-    createCollection(collection) {
+    self.createCollection = function(collection) {
         // create database
-        this.open({}, db => {
-            return db.db(this.name).createCollection(collection);
+        self.open({}, db => {
+            return db.db(self.name).createCollection(collection);
         });
     }
 
-    getCollections() {
+    self.getCollections = function() {
         return new Promise((resolve, reject) => {
-            this.open()
+            self.open()
                 .then(db => {
                     return db.db().listCollections().toArray();
                 })
@@ -583,7 +582,7 @@ module.exports = class Database {
         });
     }
 
-    modify(params = { collection: '', query: {}, update: {} }) {
+    self.modify = function(params = { collection: '', query: {}, update: {} }) {
         // update database
         let database = null;
         return new Promise((resolve, reject) => {
@@ -604,7 +603,7 @@ module.exports = class Database {
             for (let name in params.update) {
                 projection[name] = 1;
             };
-            this.find({ collection: params.collection, query: params.query, projection })
+            self.find({ collection: params.collection, query: params.query, projection })
                 .then(data => {
                     for (let name in data) {
                         if (params.update[name].action.toLowerCase() == 'set') {
@@ -634,25 +633,27 @@ module.exports = class Database {
                         }
                     }
 
-                    this.update({ collection: params.collection, query: params.query, options: { '$set': update } }).then(result => {
+                    self.update({ collection: params.collection, query: params.query, options: { '$set': update } }).then(result => {
                         resolve(data);
                     })
                 })
         });
     }
 
-    work(params = { collection: '' }) {
+    self.work = function(params = { collection: '' }) {
         return new Promise((resulve, reject) => {
-            this.open().then(db => {
-                return db.db(this.name).collection(params.collection);
+            self.open().then(db => {
+                return db.db(self.name).collection(params.collection);
             }).then(collection => {
                 params.callBack(collection);
             });
         });
     }
 
-    say() {
-        console.log(this.name);
+    self.say = function() {
+        console.log(self.name);
     }
+
+    return self;
 }
 

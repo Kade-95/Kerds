@@ -1,12 +1,12 @@
 let Func = require('./Func');
-let Database = require('./Database');
+let Database = require('./../functions/Database');
 let func = new Func();
 let db;
 
 module.exports = class PersistentSessions {
 
     constructor(server = {}) {
-        db = new Database(server);
+        db = Database(server);
         this.collection = 'persistence';
         this.expires = new Date(new Date().getTime() + (1000 * 3600 * 24 * 30)).toUTCString();
     }

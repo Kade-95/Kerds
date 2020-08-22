@@ -1,5 +1,5 @@
 let Func = require('./Func');
-let Database = require('./Database');
+let Database = require('./../functions/Database');
 let Session = require('./Session');
 let Persistence = require('./PersistentSessions');
 let objectLib = require('./../functions/Objects');
@@ -23,7 +23,7 @@ module.exports = class SessionsManager {
     }
 
     startSessions(params) {
-        db = new Database(params.server);
+        db = Database(params.server);
         persistence = new Persistence(params.server);
         this.remember = params.remember || {};
         

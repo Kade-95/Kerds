@@ -1,29 +1,5 @@
 let JSElements = require('./JSElements');
 
-function extendMany(...allClasses) {
-    class base {
-        constructor() {
-        }
-    }
-
-    let copyProps = (target, source) => {
-        let ignore = ['constructor', 'prototype', 'agrguments', 'caller', 'name', 'bind', 'call', 'apply', 'toString', 'length'];
-        let descriptions = Object.getOwnPropertyNames(source.prototype);
-        for (let prop of descriptions) {
-            console.log(prop)
-            if (ignore.includes(prop)) continue;
-
-            target.prototype[prop] = source.prototype[prop];
-        }
-    }
-
-    allClasses.forEach(singleClass => {
-        copyProps(base, singleClass);
-    });
-
-    return base;
-}
-
 module.exports = class Template extends JSElements {
     constructor() {
         super();
@@ -39,7 +15,40 @@ module.exports = class Template extends JSElements {
         //Framework with jsdom
         let self = this;
 
-        Element.prototype.commonAncestor = function (elementA, elementB) {
+        Element.prototype.toJson = function () {
+            let element = this.nodeName.toLowerCase();
+            let attributes = this.getAttributes();
+            attributes.style = this.css();
+            let children = [];
+            for (let i = 0; i < this.children.length; i++) {
+                children.push(this.children[i].toJson());
+            }
+            return { element, attributes, children }
+        }
+
+        Element.prototype.setOptions = function (options = [], params = { selected: '' }) {
+            params = params || {};
+            if (self.isset(params.flag)) {
+                this.innerHTML = '';
+            }
+
+            for (let i = 0; i < options.length; i++) {
+                let text = options[i].text || options[i];
+                let value = options[i].value || options[i];
+
+                let option = this.makeElement({ element: 'option', attributes: { value }, text });
+
+                if (value.toString().toLowerCase() == 'null') {
+                    option.setAttribute('disabled', true);
+                }
+
+                if (self.isset(params.selected) && value == params.selected) {
+                    option.setAttribute('selected', true);
+                }
+            }
+        };
+
+        Element.prototype.commonAncestor = function (elementA = new Element(), elementB = new Element()) {
             for (let ancestorA of elementA.parents()) {
                 for (let ancestorB of elementB.parents()) {
                     if (ancestorA == ancestorB) return ancestorA;
@@ -48,8 +57,8 @@ module.exports = class Template extends JSElements {
 
             return null;
         }
-        
-        Element.prototype.onAdded = function (callback) {
+
+        Element.prototype.onAdded = function (callback = () => { }) {
             this.addEventListener('DOMNodeInsertedIntoDocument', event => {
                 callback();
             });
@@ -61,7 +70,7 @@ module.exports = class Template extends JSElements {
         Element.prototype.temp = {};
 
         //This listens and handles for multiple bubbled events
-        Element.prototype.manyBubbledEvents = function (events, callback) {
+        Element.prototype.manyBubbledEvents = function (events, callback = () => { }) {
             events = events.split(',');
             for (let event of events) {
                 this.bubbledEvent(event.trim(), callback);
@@ -69,7 +78,7 @@ module.exports = class Template extends JSElements {
         }
 
         //This listens and handles for multiple bubbled events that did not bubble
-        Element.prototype.manyNotBubbledEvents = function (events, callback) {
+        Element.prototype.manyNotBubbledEvents = function (events, callback = () => { }) {
             events = events.split(',');
             for (let event of events) {
                 this.notBubbledEvent(event.trim(), callback);
@@ -77,7 +86,7 @@ module.exports = class Template extends JSElements {
         }
 
         //This handles all events that are bubbled within an element and it's children
-        Element.prototype.bubbledEvent = function (event, callback) {
+        Element.prototype.bubbledEvent = function (event, callback = () => { }) {
             //Listen for this event on the entire document
             document.addEventListener(event, event => {
                 //if the event bubbles up the element fire the callback
@@ -88,18 +97,16 @@ module.exports = class Template extends JSElements {
         }
 
         //This handles all events that are not bubbled within an element and it's children
-        Element.prototype.notBubbledEvent = function (event, callback) {
+        Element.prototype.notBubbledEvent = function (event, callback = () => { }) {
             document.addEventListener(event, event => {
                 if (!(event.target == this || this.isAncestor(event.target))) {
-                    console.log(event.target);
-
                     callback(event);
                 }
             });
         }
 
         //Listen to multiple events at time with a single callback function
-        Element.prototype.addMultipleEventListener = function (events, callback) {
+        Element.prototype.addMultipleEventListener = function (events, callback = () => { }) {
             events = events.split(',');
             for (let event of events) {
                 this.addEventListener(event.trim(), e => {
@@ -109,7 +116,7 @@ module.exports = class Template extends JSElements {
         }
 
         //perform actions on mouseenter and mouseleave
-        Element.prototype.hover = function (params) {
+        Element.prototype.hover = function (params = { css: {}, do: () => { } }) {
 
             let css = [];
             let cssValues;
@@ -122,7 +129,7 @@ module.exports = class Template extends JSElements {
                     });
                     this.css(params.css);//set the css styles
                 }
-                if (self.isset(params.do)) {// if action is to perform do
+                if (self.isfunction(params.do)) {// if action is to perform do
                     params.do(event);
                 }
             });
@@ -136,7 +143,7 @@ module.exports = class Template extends JSElements {
         };
 
         //a shorter name for querySelector
-        Element.prototype.find = function (name, position) {
+        Element.prototype.find = function (name = '', position = 0) {
             let element = null;
             if (self.isset(position)) {//get the all the elements found and return the one at this particular position
                 this.querySelectorAll(name).forEach((e, p) => {
@@ -150,12 +157,12 @@ module.exports = class Template extends JSElements {
         };
 
         //a shorter name for querySelectorAll
-        Element.prototype.findAll = function (name, options) {
+        Element.prototype.findAll = function (name = '') {
             return this.querySelectorAll(name);
         }
 
         //perform an extended querySelection on this element
-        Element.prototype.search = function (name, options, position = 0) {
+        Element.prototype.search = function (name = '', options = { attributes: {}, id: '', nodeName: '', class: '', classes: '' }, position = 0) {
             let element = null;
             let foundElements = [];//all the elements meeting the requirements
 
@@ -223,7 +230,7 @@ module.exports = class Template extends JSElements {
         };
 
         //perform search for all the elements that meet a requirement
-        Element.prototype.searchAll = function (name, options) {
+        Element.prototype.searchAll = function (name = '', options = { attributes: {}, id: '', nodeName: '', class: '', classes: '' }) {
             if (self.isset(options)) {
                 let allElements = this.querySelectorAll(name);
                 let elements = [];
@@ -268,27 +275,27 @@ module.exports = class Template extends JSElements {
         }
 
         //look for multiple single elements at a time
-        Element.prototype.fetch = function (names, options) {
+        Element.prototype.fetch = function (names = [], position = 0) {
             let elements = {};
             for (let name of names) {
-                elements[name] = this.find(name, options);
+                elements[name] = this.find(name, position);
             }
 
             return elements;
         }
 
         //look for multiple nodelists at a time
-        Element.prototype.fetchAll = function (names, options) {
+        Element.prototype.fetchAll = function (names = []) {
             let elements = {};
             for (let name of names) {
-                elements[name] = this.findAll(name, options);
+                elements[name] = this.findAll(name);
             }
 
             return elements;
         }
 
         //Get the nodes between two child elements
-        Element.prototype.nodesBetween = function (elementA, elementB) {
+        Element.prototype.nodesBetween = function (elementA = new Element(), elementB = new Element()) {
             let inBetweenNodes = [];
             for (let child of Array.from(this.children)) {//get all the children
                 //check if the two elements are children of this element
@@ -301,13 +308,13 @@ module.exports = class Template extends JSElements {
         }
 
         //Get if element is child of an element
-        Element.prototype.isAncestor = function (child) {
+        Element.prototype.isAncestor = function (child = new Element()) {
             let parents = child.parents();//Get all the parents of child
             return parents.includes(this);
         };
 
         //Get all the parents of an element until document
-        Element.prototype.parents = function (params) {
+        Element.prototype.parents = function () {
             let parents = [];
             let currentParent = this.parentNode;
             while (currentParent != null) {
@@ -330,7 +337,7 @@ module.exports = class Template extends JSElements {
         }
 
         //Remove a state from an element
-        Element.prototype.removeState = function (params) {
+        Element.prototype.removeState = function (params = { name: '' }) {
             let state = this.getState(params);//get the state (element)
             if (self.isset(state) && self.isset(params.force)) {//if state exists and should be deleted
                 if (self.isset(state.dataset.domKey)) {
@@ -342,7 +349,7 @@ module.exports = class Template extends JSElements {
         }
 
         //Get an element's state 
-        Element.prototype.getState = function (params) {
+        Element.prototype.getState = function (params = { name: '' }) {
             let state = null;
             let stateName;
 
@@ -363,7 +370,7 @@ module.exports = class Template extends JSElements {
         };
 
         //add a state to an element
-        Element.prototype.addState = function (params) {
+        Element.prototype.addState = function (params = { name: '', state: new Element() }) {
             //make sure the state has a domkey
             if (!self.isset(params.state.dataset.domKey)) {
                 params.state.setKey();
@@ -376,10 +383,10 @@ module.exports = class Template extends JSElements {
         };
 
         //set the state of an element
-        Element.prototype.setState = function (params) {
+        Element.prototype.setState = function (params = { name: '', attributes: {}, render: {}, children: [], text: '', html: '', value: '', options: [] }) {
             let state = this.getState(params);
-            let found = this.states[params.name][JSON.stringify(params)];
 
+            // let found = this.states[params.name][JSON.stringify(params)];
             // if (self.isset(found)) {
             //     state.innerHTML = found.innerHTML;
             //     state.setAttributes(found.getAttributes());
@@ -425,8 +432,8 @@ module.exports = class Template extends JSElements {
         };
 
         //async version of setstate
-        Element.prototype.setKeyAsync = async function (params) {
-            return await this.setKey(params);
+        Element.prototype.setKeyAsync = async function () {
+            return await this.setKey();
         };
 
         //set element's dom key for the virtual dom
@@ -442,7 +449,7 @@ module.exports = class Template extends JSElements {
         };
 
         //drop down a child
-        Element.prototype.dropDown = function (element) {
+        Element.prototype.dropDown = function (element = new Element()) {
             let parentContent = this.cloneNode(true);
             this.innerHTML = '';
             this.append(parentContent);
@@ -470,7 +477,7 @@ module.exports = class Template extends JSElements {
         }
 
         //Check if an attribute has changed in this element
-        Element.prototype.onAttributeChange = function (attribute, callback) {
+        Element.prototype.onAttributeChange = function (attribute = '', callback = () => { }) {
             this.addEventListener('attributesChanged', event => {
                 if (event.detail.attributeName == attribute) {
                     callback(event);
@@ -499,7 +506,7 @@ module.exports = class Template extends JSElements {
             return this;
         }
 
-        Element.prototype['checkChanges'] = function (callback) {
+        Element.prototype['checkChanges'] = function (callback = () => { }) {
             this.monitor();
             this.addEventListener('mutated', event => {
                 callback(event);
@@ -507,7 +514,7 @@ module.exports = class Template extends JSElements {
         };
 
         // check when the value of an element is changed
-        Element.prototype.onChanged = function (callBack) {
+        Element.prototype.onChanged = function (callBack = () => { }) {
             let value = this.getAttribute('value');
             let updateMe = (event) => {
                 // if element is input element
@@ -565,7 +572,7 @@ module.exports = class Template extends JSElements {
         };
 
         //render the contents of an element
-        Element.prototype.render = function (params, except) {
+        Element.prototype.render = function (params = { element: '', attributes: {} }, except) {
             if (self.isset(except)) this.removeChildren(except);//remove the contents of the element with exceptions
             else this.removeChildren();
             this.makeElement(params);//append the new contents of the element
@@ -605,7 +612,7 @@ module.exports = class Template extends JSElements {
         }
 
         //Get the values of property 
-        Element.prototype.getCssProperties = function (property) {
+        Element.prototype.getCssProperties = function (property = '') {
             let allProperties = this.getAllCssProperties();
             let properties = {};
             for (let name in allProperties) {
@@ -619,7 +626,7 @@ module.exports = class Template extends JSElements {
         }
 
         // Check if this element has this property
-        Element.prototype.hasCssProperty = function (property) {
+        Element.prototype.hasCssProperty = function (property = '') {
             var properties = this.getCssProperties(property); //get elements css properties
             for (var i in properties) {//loop through json object
                 if (self.isset(properties[i]) && properties[i] != '') {
@@ -630,7 +637,7 @@ module.exports = class Template extends JSElements {
         }
 
         //Get the most relavant value for the property
-        Element.prototype.cssPropertyValue = function (property) {
+        Element.prototype.cssPropertyValue = function (property = '') {
             //check for the value of a property of an element
             var properties = this.getCssProperties(property),
                 id = this.id,
@@ -647,42 +654,27 @@ module.exports = class Template extends JSElements {
         }
 
         // Get and Set the css values
-        Element.prototype.css = function (params) {
+        Element.prototype.css = function (styles = {}) {
             // set css style of element using json
-            if (self.isset(params)) {
-                Object.keys(params).map((key) => {
-                    this.style[key] = params[key];
+            if (self.isset(styles)) {
+                Object.keys(styles).map((key) => {
+                    this.style[key] = styles[key];
                 });
             }
-            var css = this.style.cssText,
-                style = {},
-                key,
-                value;
 
-            if (css != '') {
-                css = css.split(';');
-                var pair;
-                for (var i of css) {
-                    pair = self.trem(i);
-                    key = pair.split(':')[0];
-                    value = pair.split(':').pop();
-                    if (key != '') style[key] = self.trem(value);
-                }
-            }
-
-            return style;
+            return self.extractCSS(this);
         }
 
         // Remove a css property
-        Element.prototype.cssRemove = function (elements) {
+        Element.prototype.cssRemove = function (styles = []) {
             //remove a group of properties from elements style
-            if (Array.isArray(elements)) {
-                for (var i of elements) {
+            if (Array.isArray(styles)) {
+                for (var i of styles) {
                     this.style.removeProperty(i);
                 }
             }
             else {
-                this.style.removeProperty(elements);
+                this.style.removeProperty(styles);
             }
             return this.css();
         }
@@ -705,7 +697,8 @@ module.exports = class Template extends JSElements {
             if (!found) this.append(child);
         }
 
-        Element.prototype.clearClasses = function (except) {
+        //remove all classes except some
+        Element.prototype.clearClasses = function (except = '') {
             except = except.split(',');
             for (let j in except) {
                 except[j] = except[j].trim();
@@ -716,7 +709,8 @@ module.exports = class Template extends JSElements {
             }
         };
 
-        Element.prototype.removeClasses = function (classes) {
+        //remove classes
+        Element.prototype.removeClasses = function (classes = '') {
             classes = classes.split(',');
             for (let i of classes) {
                 i = i.trim();
@@ -725,8 +719,9 @@ module.exports = class Template extends JSElements {
                 }
             }
         };
-    
-        Element.prototype.addClasses = function (classes) {
+
+        //add classes
+        Element.prototype.addClasses = function (classes = '') {
             classes = classes.split(',');
             for (let i of classes) {
                 i = i.trim();
@@ -735,8 +730,9 @@ module.exports = class Template extends JSElements {
                 }
             }
         };
-    
-        Element.prototype.toggleClasses = function (classes) {
+
+        //toggle classes
+        Element.prototype.toggleClasses = function (classes = '') {
             classes = classes.split(',');
             for (let i of classes) {
                 i = i.trim();
@@ -747,13 +743,13 @@ module.exports = class Template extends JSElements {
         };
 
         // Remove a class from element classlist
-        Element.prototype.removeClass = function (_class) {
+        Element.prototype.removeClass = function (_class = '') {
             this.classList.remove(_class);
             return this;
         }
 
         // Check if element classlist contains a group of classes
-        Element.prototype.hasClasses = function (classList) {
+        Element.prototype.hasClasses = function (classList = []) {
             for (let mClass of classList) {
                 if (!this.classList.contains(mClass)) return false;
             }
@@ -761,37 +757,57 @@ module.exports = class Template extends JSElements {
         }
 
         // add a class to element classlist
-        Element.prototype.addClass = function (_class) {
+        Element.prototype.addClass = function (_class = '') {
             this.classList.add(_class);
             return this;
         }
 
         // toggle a class in element classlist
-        Element.prototype.toggleClass = function (_class) {
+        Element.prototype.toggleClass = function (_class = '') {
             // (this.classList.contains(_class)) ? this.classList.remove(_class) : this.classList.add(_class);
             this.classList.toggle(_class);
             return this;
         }
 
         //Get the position of element in dom
-        Element.prototype.position = function (params) {
+        Element.prototype.position = function (params = {}) {
             if (self.isset(params)) {
                 Object.keys(params).map(key => {
                     params[key] = (new String(params[key]).slice(params[key].length - 2) == 'px') ? params[key] : `${params[key]}px`;
                 });
                 this.css(params);
             }
+            let position = this.getBoundingClientRect();
 
-            return this.getBoundingClientRect();
+            return position;
+        }
+
+        //check if element is within container
+        Element.prototype.inView = function (parentIdentifier = '') {
+            let parent = this.getParents(parentIdentifier);
+            let top = this.position().top;
+            let flag = false;
+
+            if (!self.isnull(parent)) {
+                flag = top >= 0 && top <= parent.clientHeight;
+            }
+            return flag;
         }
 
         //Check if a class exists in element's classlist
-        Element.prototype.hasClass = function (_class) {
+        Element.prototype.hasClass = function (_class = '') {
             return this.classList.contains(_class);
         }
 
+        // Set a list of properties for an element
+        Element.prototype.setProperties = function (properties = {}) {
+            for (let i in properties) {
+                this[i] = properties[i];
+            }
+        };
+
         // Set a list of attributes for an element
-        Element.prototype.setAttributes = function (attributes) {
+        Element.prototype.setAttributes = function (attributes = {}) {
             for (let i in attributes) {
                 if (i == 'style') {
                     this.css(attributes[i]);
@@ -803,7 +819,7 @@ module.exports = class Template extends JSElements {
         };
 
         // Get the values of a list of attributes
-        Element.prototype.getAttributes = function (names) {
+        Element.prototype.getAttributes = function (names = []) {
             if (!self.isset(names)) names = this.getAttributeNames();
             let attributes = {};
 
@@ -814,7 +830,7 @@ module.exports = class Template extends JSElements {
         }
 
         //Create and attatch an element in an element
-        Element.prototype.makeElement = function (params) {
+        Element.prototype.makeElement = function (params = { element: '', attributes: {} }) {
             this.setKeyAsync();
 
             let element = self.createElement(params, this);
@@ -822,7 +838,7 @@ module.exports = class Template extends JSElements {
         }
 
         // Get an elements ancestor with a specific attribute
-        Element.prototype.getParents = function (name, value) {
+        Element.prototype.getParents = function (name = '', value = '') {
             var attribute = name.slice(0, 1);
             var parent = this.parentNode;
             if (attribute == '.') {
@@ -858,59 +874,14 @@ module.exports = class Template extends JSElements {
             return parent;
         }
 
-        Element.prototype.fadeIn = function (params) {
-            var opacity = new Number(0);
-            this.style.opacity = opacity;
-            var duration = (!self.isset(params) || !self.isset(params.duration)) ? 100 : params.duration;
-
-            if (this.style.display == 'none') this.style.display = 'inline-block';
-            if (this.style.visibility == 'hidden') this.style.visibility = 'visible';
-
-            var fading = setInterval(() => {
-                opacity++;
-                if (opacity == 10) {
-                    if (self.isset(params) && self.isset(params.finish)) params.finish(this);
-                    clearInterval(fading);
-                };
-                this.style.opacity = opacity / 10;
-            }, duration);
-        }
-
-        Element.prototype.fadeOut = function (params) {
-            var opacity = new Number(10);
-            var duration = (!self.isset(params) || !self.isset(params.duration)) ? 100 : params.duration;
-
-            var fading = setInterval(() => {
-                opacity--;
-
-                if (opacity == 0) {
-                    this.style.display = 'none';
-                    this.style.visibility = 'hidden';
-                    if (self.isset(params) && self.isset(params.finish)) params.finish(this);
-                    clearInterval(fading);
-                };
-                this.style.opacity = opacity / 10;
-            }, duration);
-        }
-
-        Element.prototype.fadeToggle = function (params) {
-            if (this.style.display == 'none' || this.style.visibility == 'hidden') {
-                this.fadeIn(params)
-            }
-            else {
-                console.log(this.style.display)
-                this.fadeOut(params);
-            }
-        }
-
         // Toggle the display of an element
-        Element.prototype.toggle = function (params) {
+        Element.prototype.toggle = function () {
             if (this.style.display == 'none' || this.style.visibility == 'hidden') this.show();
             else this.hide();
         }
 
         //Hide an element in dom
-        Element.prototype.hide = function (params) {
+        Element.prototype.hide = function () {
             // if (self.isset(this.style.display)) this.temp.display = this.style.display;
             // if (self.isset(this.style.visibility)) this.temp.visibility = this.style.visibility;
 
@@ -920,7 +891,7 @@ module.exports = class Template extends JSElements {
         }
 
         //Show an element in dom
-        Element.prototype.show = function (params) {
+        Element.prototype.show = function () {
             // if (this.style.display == 'none') {
             //     // if (self.isset(this.temp.display)) {
             //     //     this.css({ display: this.temp.display });
@@ -932,7 +903,7 @@ module.exports = class Template extends JSElements {
         }
 
         //Remove all the children of an element with exceptions of some
-        Element.prototype.removeChildren = function (params) {
+        Element.prototype.removeChildren = function (params = { except: [] }) {
             let exceptions = [];
             params = params || {};
             params.except = params.except || [];
@@ -966,12 +937,11 @@ module.exports = class Template extends JSElements {
         }
 
         // Toggle a list of children of an element
-        Element.prototype.toggleChildren = function (params) {
+        Element.prototype.toggleChildren = function (params = { name: '', class: '', id: '' }) {
             Array.from(this.children).forEach(node => {
-                if (self.isset(params)) {
-                    if (!((self.isset(params.name) && params.name == node.nodeName) || self.isset(params.class) && self.hasArrayElement(Array.from(node.classList), params.class.split(' ')) || (self.isset(params.id) && params.id == node.id))) {
-                        node.toggle();
-                    }
+                if (!((self.isset(params.name) && params.name == node.nodeName) || self.isset(params.class) && self.hasArrayElement(Array.from(node.classList), params.class.split(' ')) || (self.isset(params.id) && params.id == node.id))) {
+                    node.toggle();
+
                 } else {
                     node.toggle();
                 }
@@ -979,12 +949,11 @@ module.exports = class Template extends JSElements {
         }
 
         // Attatch an element to another element [append or prepend]
-        Element.prototype.attachElement = function (element, attachment) {
-            attachment = attachment || 'append';
+        Element.prototype.attachElement = function (element, attachment = 'append') {
             this[attachment](element);
         }
 
-        Element.prototype.pressed = function (callback) {
+        Element.prototype.pressed = function (callback = () => { }) {
             let startTime = 0, endTime = 0;
             this.addMultipleEventListener('mousedown, touchstart', event => {
                 startTime = event.timeStamp;
@@ -1002,12 +971,7 @@ module.exports = class Template extends JSElements {
     htmlCollectionLibrary() {
         let self = this;
 
-        HTMLCollection.prototype.pop = function () {
-            // let last = this.length - 1;
-            // return this.popIndex(last);
-        }
-
-        HTMLCollection.prototype.popIndex = function (position) {
+        HTMLCollection.prototype.popIndex = function (position = 0) {
             let collection = self.createElement({ element: 'sample' }).children;
 
             let list = Array.from(this);
@@ -1022,14 +986,14 @@ module.exports = class Template extends JSElements {
             return collection;
         }
 
-        HTMLCollection.prototype.forEach = function (callback) {
+        HTMLCollection.prototype.forEach = function (callback = () => { }) {
             let list = Array.from(this);
             for (let i = 0; i < list.length; i++) {
                 callback(list[i], i)
             }
         };
 
-        HTMLCollection.prototype.each = function (callback) {
+        HTMLCollection.prototype.each = function (callback = () => { }) {
             let list = Array.from(this);
             for (let i = 0; i < list.length; i++) {
                 callback(list[i], i)
@@ -1072,7 +1036,7 @@ module.exports = class Template extends JSElements {
     nodeListLibrary() {
         let self = this;
 
-        NodeList.prototype['each'] = function (callback) {
+        NodeList.prototype['each'] = function (callback = () => { }) {
             for (let i = 0; i < this.length; i++) {
                 callback(this[i], i)
             }

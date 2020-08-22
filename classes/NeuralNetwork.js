@@ -21,7 +21,7 @@ module.exports = class NeuralNetwork {
         this.lr = this.lr || 0.1;
     }
 
-    feedFoward(inputArray) {
+    feedFoward(inputArray = []) {
         let inputs = inputArray instanceof Matrix ? inputArray : this.prepareInputs(inputArray);
 
         let hiddens = Matrix.multiply(this.ihWeights, inputs);
@@ -35,15 +35,15 @@ module.exports = class NeuralNetwork {
         return { inputs, hiddens, outputs };
     }
 
-    queryBack(targetArray) {
+    queryBack(targetArray = []) {
 
     }
 
-    predict(inputArray) {
+    predict(inputArray = []) {
         return this.feedFoward(inputArray).outputs;
     }
 
-    getWeightsUpdate(inputs, outputs, errors) {
+    getWeightsUpdate(inputs = new Matrix(), outputs = new Matrix(), errors = 1) {
         let gradients = Matrix.map(outputs, dSigmoid);
         gradients.multiply(errors);
         gradients.multiply(this.lr);
@@ -54,7 +54,7 @@ module.exports = class NeuralNetwork {
         return { change, gradients };
     }
 
-    backpropagate(inputs, targets) {
+    backpropagate(inputs = [], targets = new Matrix()) {
         let { hiddens, outputs } = this.feedFoward(inputs);
 
         let hoErrors = Matrix.subtract(targets, outputs);
@@ -69,18 +69,18 @@ module.exports = class NeuralNetwork {
         this.ihBias.add(ihUpdates.gradients);
     }
 
-    train(params) {
+    train(params = { trainingData: [], period: 1, epoch: 1 }) {
         let inputArray = [], targetArray = [];
         for (let data of params.trainingData) {
             inputArray.push(data.inputs);
             targetArray.push(data.targets);
         }
 
-        let inputs = func.array.each(inputArray, value => {
+        let inputs = arrayLibrary.each(inputArray, value => {
             return this.prepareInputs(value);
         });
 
-        let targets = func.array.each(targetArray, value => {
+        let targets = arrayLibrary.each(targetArray, value => {
             return this.prepareTargets(value);
         });
 
@@ -101,18 +101,18 @@ module.exports = class NeuralNetwork {
         }
     }
 
-    setLearningRate(lr) {
+    setLearningRate(lr = 0.1) {
         this.lr = lr;
     }
 
-    prepareInputs(inputArray) {
+    prepareInputs(inputArray = []) {
         let inputs = Matrix.fromArray(Math.normalize(inputArray));
         inputs.multiply(0.99);
         inputs.add(0.01);
         return inputs;
     }
 
-    prepareTargets(targetArray) {
+    prepareTargets(targetArray = []) {
         let targets = Matrix.fromArray(targetArray);
         targets.add(0.01);
         targets.multiply(0.99);

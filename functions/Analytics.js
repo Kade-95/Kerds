@@ -1,9 +1,16 @@
-function AnalysisLibrary() {
+let MathsLibrary = require('./Math');
+let ObjectLibrary = require('./Objects');
+
+
+module.exports = function AnalysisLibrary() {
     let self = {};
+    self.math = MathsLibrary();
+    self.objectLib = ObjectLibrary();
+
     self.entropy = (data) => {
         let entropy = 0;//initialize entropy
         let values = Object.values(data);//get the values of the object variable
-        let sum = this.math.sum(values);//get the sum of the Values
+        let sum = self.math.sum(values);//get the sum of the Values
         for (let value of values) {
             entropy -= value / sum * Math.log2(value / sum); //use the formular on each item
         }
@@ -35,7 +42,7 @@ function AnalysisLibrary() {
         }
 
         for (let v of variableValues) {//get the entropy of each and multiply by the probability
-            sumOfInformation += (this.math.sum(Object.values(v)) / variableLength) * self.entropy(v);
+            sumOfInformation += (self.math.sum(Object.values(v)) / variableLength) * self.entropy(v);
         }
 
         let informationGain = targetEntropy - sumOfInformation;
@@ -49,7 +56,7 @@ function AnalysisLibrary() {
             gainedInformation[i] = self.informationGain(data, nodes[i]);
         }
 
-        return this.object.max(gainedInformation);
+        return self.objectLib.max(gainedInformation);
     }
 
     self.quartileRange = (data) => {
@@ -70,14 +77,14 @@ function AnalysisLibrary() {
             let [middle1, middle2] = middle(_dt);
             let middles = [];
             middles.push(_dt[middle1]);
-            if (this.isset(middle2)) middles.push(_dt[middle2]);
+            if (middle2 != undefined) middles.push(_dt[middle2]);
 
             return middles;
         }
 
         let halfs = (_dt) => {//divide a list into two equal halfs
             let [middle1, middle2] = middle(_dt);
-            if (!this.isset(middle2)) middle2 = middle1;
+            if (middle2 == undefined) middle2 = middle1;
             let half1 = _dt.slice(0, middle1);
             let half2 = _dt.slice(middle2 + 1);
             return [half1, half2];
@@ -90,8 +97,8 @@ function AnalysisLibrary() {
         let middle1 = getMiddle(layers[0]);//get the middle of the first layers
         let middle3 = getMiddle(layers[1]);
 
-        let q1 = this.math.median(middle1);//get the median of the first and last layers
-        let q3 = this.math.median(middle3);
+        let q1 = self.math.median(middle1);//get the median of the first and last layers
+        let q3 = self.math.median(middle3);
 
         return q3 - q1;//find the range
     }
@@ -108,6 +115,4 @@ function AnalysisLibrary() {
     }
 
     return self;
-}
-
-export { AnalysisLibrary };
+};

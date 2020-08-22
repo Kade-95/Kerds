@@ -336,4 +336,9 @@ module.exports = class Period extends Func {
     secondsTillMoment(moment) {
         return this.secondsTillDate(this.date(moment)) + this.isTimeValid(this.time(moment));
     }
+
+    log(...data){
+        let time = `[${this.time()}]:`;
+        console.log(time, ...data);
+    }
 }

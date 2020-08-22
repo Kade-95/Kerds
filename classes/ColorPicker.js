@@ -2,142 +2,88 @@ let JSElements = require('./JSElements');
 
 module.exports = class ColorPicker extends JSElements {
 
-    constructor(params) {
+    constructor() {
         super();
-        this.canvas = this.generateCanvas();
-        this.target = this.canvas.find('#color-picker');
-        this.width = params.width;
-        this.height = params.height;
-        this.target.width = this.width;
-        this.target.height = this.height;
-        //the context
-        this.context = this.target.getContext('2d');
-        this.canvas.find('.crater-picked-color-value').innerText = params.color;
-
-        //Circle color
-        this.pickerCircle = { x: 10, y: 10, width: 7, height: 7 };
-
-        this.listen();
     }
 
-    generateCanvas() {
-        let canvasContainer = this.createElement({
-            element: 'div', attributes: { class: 'crater-color-picker' }, children: [
-                { element: 'canvas', attributes: { id: 'color-picker', class: 'crater-canvas' } },
-                {
-                    element: 'div', attributes: { class: 'crater-color-picker-result' }, children: [
-                        { element: 'span', attributes: { class: 'crater-picked-color' } },
-                        {
-                            element: 'span', attributes: { class: 'crater-picked-color-value' }
-                        },
-                    ]
-                },
-                { element: 'div', text: 'Close', attributes: { class: 'crater-close-color-picker' } }
-            ]
-        });
-
-        return canvasContainer;
-    }
-
-    build() {
-        let gradient = this.context.createLinearGradient(0, 0, this.width, 0);
-
-        //color stops
-        gradient.addColorStop(0, "rgb(255, 0, 0)");
-        gradient.addColorStop(0.15, "rgb(255, 0, 255)");
-        gradient.addColorStop(0.33, "rgb(0, 0, 255)");
-        gradient.addColorStop(0.49, "rgb(0, 255, 255)");
-        gradient.addColorStop(0.67, "rgb(0, 255, 0)");
-        gradient.addColorStop(0.87, "rgb(255, 255, 0)");
-        gradient.addColorStop(1, "rgb(255, 0, 0)");
-
-        this.context.fillStyle = gradient;
-        this.context.fillRect(0, 0, this.width, this.height);
-
-        //add black and white stops
-        gradient = this.context.createLinearGradient(0, 0, 0, this.height);
-        gradient.addColorStop(0, "rgba(255, 255, 255, 1)");
-        gradient.addColorStop(0.5, "rgba(255, 255, 255, 0)");
-        gradient.addColorStop(0.5, "rgba(0, 0, 0, 0)");
-        gradient.addColorStop(1, "rgba(0, 0, 0, 1)");
-
-        this.context.fillStyle = gradient;
-        this.context.fillRect(0, 0, this.width, this.height);
-
-        //circle picker
-        this.context.beginPath();
-        this.context.arc(this.pickerCircle.x, this.pickerCircle.y, this.pickerCircle.width, 0, Math.PI * 2);
-        this.context.strokeStyle = 'black';
-        this.context.stroke();
-        this.context.closePath();
-    }
-
-    listen() {
-        let isMouseDown = false;
-
-        const onMouseDown = (event) => {
-            let currentX = event.clientX - this.target.getBoundingClientRect().left;
-            let currentY = event.clientY - this.target.getBoundingClientRect().top;
-
-            //is mouse in color picker
-            isMouseDown = (currentX > 0 && currentX < this.target.getBoundingClientRect().width && currentY > 0 && currentY < this.target.getBoundingClientRect().height);
-        };
-
-        const onMouseMove = (event) => {
-            if (isMouseDown) {
-                this.pickerCircle.x = event.clientX - this.target.getBoundingClientRect().left;
-                this.pickerCircle.y = event.clientY - this.target.getBoundingClientRect().top;
-
-                let picked = this.getPickedColor();
-
-                this.pickedColor = `rgb(${picked.r}, ${picked.g}, ${picked.b})`;
-                this.target.dispatchEvent(new CustomEvent('colorChanged'));
-
-                this.canvas.find('.crater-picked-color').css({ backgroundColor: this.pickedColor });
-
-                this.canvas.find('.crater-picked-color-value').innerText = this.pickedColor;
+    colorType(color = '#ffffff') {
+        let type;
+        if (color.indexOf('#') == 0 && (color.length - 1) % 3 == 0) {
+            type = 'hex';
+        }
+        else if (color.indexOf('rgba') == 0) {
+            let values = this.inBetween(color, 'rgba(', ')');
+            if (values != -1 && values.split(',').length == 4) {
+                type = 'rgba';
             }
-        };
+        }
+        else if (color.indexOf('rgb') == 0) {
+            let values = this.inBetween(color, 'rgb(', ')');
+            if (values != -1 && values.split(',').length == 3) {
+                type = 'rgb';
+            }
+        }
 
-        const onMouseUp = (event) => {
-            isMouseDown = false;
-        };
-
-        //Register
-        this.target.addEventListener("mousedown", onMouseDown);
-        this.target.addEventListener("mousemove", onMouseMove);
-        document.addEventListener("mouseup", onMouseUp);
-
-        this.canvas.find('.crater-close-color-picker').addEventListener('click', event => {
-            this.dispose();
-        });
+        return type
     }
 
-    onChanged = (callBack) => {
-        this.target.addEventListener('colorChanged', event => {
-            callBack(this.pickedColor);
-        });
+    hexToRGB(hex = '#ffffff') {
+        hex = '0x' + hex.replace('#', '');
+        let red = (hex >> 16) & 0xFF,
+            green = (hex >> 8) & 0xFF,
+            blue = hex & 0xFF;
+
+        return `rgb(${red}, ${green}, ${blue})`;
     }
 
-    getPickedColor() {
-        let imageData = this.context.getImageData(this.pickerCircle.x, this.pickerCircle.y, 1, 1);
-        return { r: imageData.data[0], g: imageData.data[1], b: imageData.data[2] };
+    rgbToHex(color = 'rgb(0, 0, 0)') {
+        let start = color.indexOf('(') + 1;
+        let end = color.indexOf(')');
+        let [r, g, b, a] = color.slice(start, end).split(',');
+
+        let hex = '#';
+        hex += ((1 << 24) + (Math.floor(r) << 16) + (Math.floor(g) << 8) + Math.floor(b)).toString(16).slice(1, 7);
+
+        return hex;
     }
 
-    draw(speed) {
-        this.interval = setInterval(() => this.build(), speed);
+    addOpacity(color = 'rgb(0, 0, 0)', opacity = 0.5) {
+        let start = color.indexOf('(') + 1;
+        let end = color.indexOf(')');
+        let points = color.slice(start, end).split(',');
+        points[3] = opacity;
+
+        return `rgba(${points.join(',')})`;
     }
 
-    dispose() {
-        clearInterval(this.interval);
-        this.canvas.remove();
+    getOpacity(color = 'rgb(0, 0, 0)') {
+        let [r, g, b, a] = this.inBetween(color, '(', ')').split(',');
+        return a.trim();
     }
 
-    static rgbToHex(rgb) {
-        rgb = rgb.match(/^rgba?[\s+]?\([\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?,[\s+]?(\d+)[\s+]?/i);
-        return (rgb && rgb.length === 4) ? "#" +
-            ("0" + parseInt(rgb[1], 10).toString(16)).slice(-2) +
-            ("0" + parseInt(rgb[2], 10).toString(16)).slice(-2) +
-            ("0" + parseInt(rgb[3], 10).toString(16)).slice(-2) : '';
+    invertColor(color = '#ffffff') {
+        let type = this.colorType(color);
+        let invert;
+        if (type == 'hex') {
+            color = color.replace('#', '');
+            invert = '#' + this.invertHex(color);
+        }
+        else if (type == 'rgb') {
+            color = this.rgbToHex(color).replace('#', '');
+            invert = this.invertHex(color);
+            invert = this.hexToRGB(invert);
+        }
+        else if (type == 'rgba') {
+            let opacity = this.getOpacity(color);
+            color = this.rgbToHex(color).replace('#', '');
+            invert = this.invertHex(color);
+            invert = this.hexToRGB(invert);
+            invert = this.addOpacity(invert, opacity);
+        }
+        return invert;
+    }
+
+    invertHex(hex = 'ffffff') {
+        return (Number(`0x1${hex}`) ^ 0xFFFFFF).toString(16).substr(1).toUpperCase()
     }
 }

@@ -3,10 +3,9 @@ let Template = require('./Template');
 module.exports = class Components extends Template {
     constructor() {
         super();
-        this.makeCustomElements();
     }
 
-    createTab(params) {
+    createTab(params = { titles: [] }) {
         var tabTitle = this.createElement({ element: 'ul', attributes: { class: 'tab' } });
         params.view.append(tabTitle);
 
@@ -18,14 +17,14 @@ module.exports = class Components extends Template {
 
         tabTitle.findAll('li').forEach(node => {
             node.addEventListener('click', event => {
-                var url = this.urlSplitter(fullUrl);
+                var url = this.urlSplitter(location.href);
                 url.vars.tab = node.textContent.toLowerCase();
                 router.render({ url: '?' + this.urlSplitter(this.urlMerger(url, 'tab')).queries });
             })
         })
     }
 
-    cell(params) {
+    cell(params = { element: 'input', attributes: {}, name: '', dataAttributes: {}, value: '', text: '', html: '', edit: '' }) {
         //set the cell-data id
         var id = this.stringReplace(params.name, ' ', '-') + '-cell';
 
@@ -39,7 +38,7 @@ module.exports = class Components extends Template {
         params.dataAttributes = (this.isset(params.dataAttributes)) ? params.dataAttributes : {};
         params.dataAttributes.id = id;
 
-        let components;
+        var components;
 
         //set the properties of cell data
         if (params.element == 'select') {//check if cell data is in select element
@@ -54,7 +53,7 @@ module.exports = class Components extends Template {
         }
 
         if (this.isset(params.value)) components.attributes.value = params.value;
-        // if (this.isset(params.options)) components.options = params.options;
+        if (this.isset(params.options)) components.options = params.options;
 
         let data;
         if (params.element instanceof Element) {
@@ -70,6 +69,7 @@ module.exports = class Components extends Template {
 
         //create cell element
         let cell = this.createElement({ element: 'div', attributes: params.attributes, children: [label, data] });
+
         cell.classList.add('cell');
 
         if (this.isset(params.text)) data.textContent = params.text;
@@ -89,7 +89,7 @@ module.exports = class Components extends Template {
         if (this.isset(params.edit)) {
             edit = cell.makeElement({
                 element: 'i', attributes: {
-                    class: `small btn ${params.edit} fas fa-pen`, style: { cursor: 'pointer', backgroundColor: 'white', width: '1em', height: 'auto', position: 'absolute', top: '0px', right: '0px' }
+                    class: `${params.edit}`, 'data-icon': 'fas, fa-pen', style: { cursor: 'pointer', backgroundColor: 'var(--primary-color)', width: '1em', height: 'auto', position: 'absolute', top: '0px', right: '0px', padding: '.15em' }
                 }
             });
             cell.css({ position: 'relative' });
@@ -97,50 +97,10 @@ module.exports = class Components extends Template {
         return cell;
     }
 
-    dataCell(params) {
-        let cell = this.cell(params);
-
-        data.onfocus = focused => {
-            var previousValue = data.value;
-            data.onblur = blurred => {
-                var currentValue = data.value;
-                if (currentValue != previousValue) {
-                    if (this.isset(params.update) && data.value != '') {
-                        params.update['new'] = {};
-                        params.update['new'][this.stringReplace(params.name, ' ', '')] = data.value;
-                        if (this.isset(params.update.check)) {
-                            params.update.check[params.name] = data.value;
-                            queryHandler.db('checkThen', params.update).then(result => {
-                                if (result == 'found') {
-                                    this.message({ text: `${params.name} already exists`, temp: '' });
-                                }
-                                else {
-                                    this.message({ text: params.update.work + ' Successful', temp: '' });
-                                }
-                            }).catch(err => {
-                                this.message({ text: params.update.work + ' Unsuccessful' });
-                            });
-                        } else {
-                            queryHandler.db('update', params.update).then(result => {
-                                this.message({ text: 'Update Successful', temp: '' });
-                            }).catch(err => {
-                                this.message({ text: 'Update Unsuccessful' });
-                            });
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    message(params) {
+    message(params = { link: '', text: '', temp: 0 }) {
         var me = this.createElement({
             element: 'span', attributes: { class: 'alert' }, children: [
-                this.isset(params.link) ?
-                    this.createElement({ element: 'a', text: params.text, attributes: { class: 'text', href: params.link } })
-                    :
-                    this.createElement({ element: 'a', text: params.text, attributes: { class: 'text' } }),
-                ,
+                this.createElement({ element: 'a', text: params.text, attributes: { class: 'text', href: params.link } }),
                 this.createElement({ element: 'span', attributes: { class: 'close' } })
             ]
         });
@@ -159,108 +119,122 @@ module.exports = class Components extends Template {
         body.find('#notification-block').append(me);
     }
 
-    createTable(params) {
-        //create the table element
-        let table = this.createElement(
-            { element: 'table', attributes: params.attributes }
-        );
-        
-        table.classList.add('table');//add table to the class
+    createTable(params = { title: '', contents: {}, projection: {}, rename: {}, sort: false, search: false, filter: [] }) {
+        //create the table element   
+        let headers = [],//the headers
+            columns = {},
+            columnCount = 0,
+            i,
+            table = this.createElement(
+                { element: 'div', attributes: params.attributes }
+            );//create the table 
 
-        let tableHead = table.makeElement({//create the table-head
-            element: 'thead', children: [
-                { element: 'tr' }
-            ]
-        });
+        table.classList.add('kerdx-table');//add table to the class
 
-        let tableBody = table.makeElement({//create the table-body
-            element: 'tbody'
-        });
-
-        let tableHeadRow = tableHead.querySelector('tr');//create the table-head-row
-
-        let headers = [];//the headers
-        for (let content of params.contents) {
-            
-            let tableBodyRow = tableBody.makeElement({//create a table-body-row
-                element: 'tr', attributes: { class: params.rowClass }
-            });
-
-            for (let key in content) {
-                if (headers.indexOf(key) == -1) {//check if key has been added to the headers
-                    headers.push(key);
-                    let tableHeadCell = tableHeadRow.makeElement({//create table-head-cell
-                        element: 'th', text: key, attributes: { 'data-name': 'table-data-' + key }
+        for (let content of params.contents) {//loop through the json array
+            i = params.contents.indexOf(content);//get the position of the row
+            for (let name in content) {//loop through the row
+                if (headers.indexOf(name) == -1) {//add to headers
+                    headers.push(name);
+                    columns[name] = table.makeElement({
+                        element: 'column', attributes: { class: 'kerdx-table-column', 'data-name': name }, children: [
+                            {
+                                element: 'span', attributes: { class: 'kerdx-table-column-title', 'data-name': name }, children: [
+                                    { element: 'p', attributes: { class: 'kerdx-table-column-title-text' }, text: name }
+                                ]
+                            },
+                            { element: 'div', attributes: { class: 'kerdx-table-column-contents' } }
+                        ]
                     });
-                }
 
-                let tableBodyRowData = tableBodyRow.makeElement({//create table-body-cell
-                    element: 'td', html: content[key], attributes: { 'data-name': 'table-data-' + key }
-                });
+                    if (this.isset(params.sort)) {//make sortable if needed
+                        columns[name].find('.kerdx-table-column-title').makeElement({ element: 'i', attributes: { class: 'kerdx-table-column-title-sort', 'data-icon': 'fas, fa-arrow-down' } });
+                    }
+                }
             }
         }
 
-        let tableContainer = this.createElement({
-            element: 'div', attributes: { class: 'table-container' }, children: [
-                {
-                    element: 'span', attributes: { class: 'table-titleandsearch' }, children: [
+        params.projection = params.projection || {};
 
-                    ]
+        let hide = Object.values(params.projection).includes(1);
+
+
+        for (let name of headers) {//loop through the headers and add the contents 
+            for (let content of params.contents) {
+                i = params.contents.indexOf(content);
+                columns[name].find('.kerdx-table-column-contents').makeElement({ element: 'span', attributes: { class: 'kerdx-table-column-cell', 'data-name': name, 'data-value': content[name] || '', 'data-row': i }, html: content[name] || '' });
+            }
+
+            if (params.projection[name] == -1 || (hide && !this.isset(params.projection[name]))) {
+                columns[name].css({ display: 'none' });
+                continue;
+            }
+
+            columnCount++;//count the column length
+        }
+
+        table.css({ gridTemplateColumns: `repeat(${columnCount}, 1fr)` });
+
+        let tableContainer = this.createElement({//create table container and title
+            element: 'div', attributes: { class: 'kerdx-table-container' }, children: [
+                {
+                    element: 'span', attributes: { class: 'kerdx-table-titleandsearch' }
                 },
                 table
             ]
         });
-        let count = 0;
 
-        if (this.isset(params.title)) {
-            tableContainer.find('.table-titleandsearch').makeElement({ element: 'h5', attributes: { class: 'table-title' }, text: params.title });
-            count++;
+        let titleCount = 0;
+
+        if (this.isset(params.title)) {// create the title text if needed
+            tableContainer.find('.kerdx-table-titleandsearch').makeElement({ element: 'h5', attributes: { class: 'kerdx-table-title' }, text: params.title });
+            titleCount++;
         }
 
-        if (this.isset(params.search)) {
-            tableContainer.find('.table-titleandsearch').makeElement({ element: 'input', attributes: { class: 'table-search', placeHolder: 'Search table...' } });
-            count++;
+        if (this.isset(params.sort)) {// set the data for sorting
+            table.dataset.sort = true;
         }
 
-        if (this.isset(params.sort)) {
-            tableContainer.find('.table-titleandsearch').makeElement({ element: 'select', attributes: { class: 'table-sorter' }, options: params.sort });
-            count++;
+        if (this.isset(params.search)) {// create the search area
+            tableContainer.find('.kerdx-table-titleandsearch').makeElement({ element: 'input', attributes: { class: 'kerdx-table-search', placeHolder: 'Search table...' } });
+            titleCount++;
         }
 
-        tableContainer.find('.table-titleandsearch').css({ gridTemplateColumns: `repeat(${count}, 1fr)` });
+        if (this.isset(params.filter)) {//create the filter area
+            tableContainer.find('.kerdx-table-titleandsearch').makeElement({ element: 'select', attributes: { class: 'kerdx-table-filter' }, options: params.filter });
+            titleCount++;
+        }
+
+        if (params.contents.length == 0) {// Notify if table is empty
+            table.textContent = 'Empty Table';
+        }
+
+        tableContainer.makeElement({// arrange the table title
+            element: 'style', text: `
+            @media(min-width: 700px) {
+                .kerdx-table-titleandsearch {
+                  grid-template-columns: repeat(${titleCount}, 1fr);
+                }
+              }
+        `});
 
         return tableContainer;
     }
 
     getTableData(table) {
-        let header = table.querySelector('thead');
-        let body = table.querySelector('tbody');
-
         let data = [];
-        let heads = [];
-        if (!this.isnull(header)) {
-            for (let head of header.querySelectorAll('th')) {
-                heads.push(head.textContent);
-            }
-        }
+        let cells = table.findAll('.kerdx-table-column-cell');
 
-        let rows = body.querySelectorAll('tr');
-
-        for (let row of rows) {
-            let line = {};
-            data.push(line);
-            row = row.querySelectorAll('td');
-            for (let i in row) {
-                if (!isNaN(i)) {
-                    line[heads[i] || i] = row[i].textContent;
-                }
-            }
+        for (let i = 0; i < cells.length; i++) {
+            let { name, value, row } = cells[i].dataset;
+            data[row] = data[row] || {};
+            data[row][name] = value;
         }
 
         return data;
     }
 
-    sortTable(table, by, direction) {
+    sortTable(table, by = '', direction = 1) {
         let data = this.getTableData(table);
 
         data.sort((a, b) => {
@@ -282,31 +256,232 @@ module.exports = class Components extends Template {
         return data;
     }
 
-    createForm(params) {
+    listenTable(params = { table: {}, options =[] }, callbacks = { click: () => { }, filter: () => { } }) {
+        params.options = params.options || [];
+        callbacks = callbacks || [];
+        let table = params.table.find('.kerdx-table');
+
+        let options = this.createElement({
+            element: 'span', attributes: { class: 'kerdx-table-options' }
+        });
+
+        let list = {
+            view: 'fas fa-eye',
+            delete: 'fas fa-trash',
+            edit: 'fas fa-pen',
+            revert: 'fas fa-history'
+        }
+
+        let optionClass;
+        for (let option of params.options) {
+            optionClass = list[option] || `fas fa-${option}`;
+            let anOption = options.makeElement({
+                element: 'i', attributes: { class: optionClass + ' kerdx-table-option', id: 'kerdx-table-option-' + option }
+            });
+        }
+
+        let tableTitles = table.findAll('.kerdx-table-column-title');
+        let tableColumns = table.findAll('.kerdx-table-column');
+        let rows = [];
+        let firstColumn = tableColumns[0];
+        let firstVisibleColumn;
+
+        if (this.isnull(firstColumn)) {
+            return;
+        }
+
+        for (let i = 0; i < tableColumns.length; i++) {
+            if (tableColumns[i].css().display != 'none') {
+                firstVisibleColumn = tableColumns[i];
+                break;
+            }
+        }
+
+        let firstCells = firstColumn.findAll('.kerdx-table-column-cell');
+        let firstVisibleCells = firstVisibleColumn.findAll('.kerdx-table-column-cell');
+
+        let tableRow;
+
+        for (let i = 0; i < firstCells.length; i++) {
+            rows.push(firstCells[i].dataset.row);
+        }
+
+        if (params.table.find('.kerdx-table').dataset.sort == 'true') {
+            for (let i = 0; i < tableTitles.length; i++) {
+                tableTitles[i].addEventListener('mouseenter', event => {
+                    tableTitles[i].find('.kerdx-table-column-title-sort').css({ display: 'unset' });
+                });
+
+                tableTitles[i].addEventListener('mouseleave', event => {
+                    tableTitles[i].find('.kerdx-table-column-title-sort').css({ display: 'none' });
+                });
+
+                tableTitles[i].find('.kerdx-table-column-title-sort').addEventListener('click', event => {
+                    let direction;
+                    tableTitles[i].find('.kerdx-table-column-title-sort').toggleClasses('fas, fa-arrow-up');
+                    tableTitles[i].find('.kerdx-table-column-title-sort').toggleClasses('fas, fa-arrow-down');
+                    if (tableTitles[i].find('.kerdx-table-column-title-sort').dataset.direction == 'up') {
+                        tableTitles[i].find('.kerdx-table-column-title-sort').dataset.direction = 'down';
+                        direction = 1;
+                    }
+                    else {
+                        tableTitles[i].find('.kerdx-table-column-title-sort').dataset.direction = 'up';
+                        direction = -1;
+                    }
+
+                    let text = tableTitles[i].find('.kerdx-table-column-title-text').textContent;
+
+                    let data = this.sortTable(params.table.find('.kerdx-table'), text, direction);
+                    let newTable = this.createTable({ contents: data });
+
+                    let newTableColumns = newTable.findAll('.kerdx-table-column');
+                    for (let j = 0; j < newTableColumns.length; j++) {
+                        tableColumns[j].find('.kerdx-table-column-contents').innerHTML = newTableColumns[j].find('.kerdx-table-column-contents').innerHTML;
+                    }
+
+                    tableColumns = table.findAll('.kerdx-table-column');
+                    filter();
+                });
+            }
+        }
+
+        if (!this.isnull(params.table.find('.kerdx-table-search'))) {
+            params.table.find('.kerdx-table-search').onChanged(value => {
+                filter();
+            });
+        }
+
+        if (!this.isnull(params.table.find('.kerdx-table-filter'))) {
+            params.table.find('.kerdx-table-filter').onChanged(value => {
+                filter();
+            });
+        }
+
+        let searchValue, filterValue;
+
+        let filter = () => {
+            if (!this.isnull(params.table.find('.kerdx-table-search'))) {
+                searchValue = params.table.find('.kerdx-table-search').value;
+            }
+
+            if (!this.isnull(params.table.find('.kerdx-table-filter'))) {
+                filterValue = params.table.find('.kerdx-table-filter').value;
+            }
+
+            for (let i = 0; i < rows.length; i++) {
+                let hide = false;
+                tableRow = table.findAll(`.kerdx-table-column-cell[data-row="${i}"]`);
+
+                for (let j = 0; j < tableRow.length; j++) {
+                    tableRow[j].cssRemove(['display']);
+                }
+
+                if (this.isset(filterValue) && hide == false && this.isset(callbacks.filter)) {
+                    hide = callbacks.filter(filterValue, tableRow);
+                }
+
+                if (this.isset(searchValue) && hide == false) {
+                    hide = true;
+                    for (let j = 0; j < tableRow.length; j++) {
+                        if (tableRow[j].textContent.toLowerCase().includes(searchValue.toLowerCase())) {
+                            hide = false;
+                            break;
+                        }
+                    }
+                }
+
+                if (hide) {
+                    for (let j = 0; j < tableRow.length; j++) {
+                        tableRow[j].css({ display: 'none' });
+                    }
+                }
+            }
+        }
+
+        if (this.isset(callbacks.click)) {
+            table.addMultipleEventListener('mousedown, touchstart', event => {
+                let target = event.target;
+                if (target.classList.contains('kerdx-table-option')) {
+                    if (this.isset(callbacks.click)) {
+                        callbacks.click(event);
+                    }
+                }
+                else if (target.classList.contains('kerdx-table-column-cell') || !this.isnull(target.getParents('.kerdx-table-column-cell'))) {
+                    if (!target.classList.contains('kerdx-table-column-cell')) {
+                        target = target.getParents('.kerdx-table-column-cell');
+                    }
+                    let position = target.dataset.row;
+
+                    options.remove();
+                    firstVisibleCells[position].css({ position: 'relative' });
+                    firstVisibleCells[position].append(options);
+
+                    if (params.table.classList.contains('kerdx-selectable')) {
+                        let row = table.findAll(`.kerdx-table-column-cell[data-row="${position}"]`);
+                        for (let i = 0; i < row.length; i++) {
+                            row[i].classList.toggle('kerdx-table-selected-row');
+                        }
+                        options.remove();
+
+                        if (!target.classList.contains('kerdx-table-selected-row')) {
+                            if (firstColumn.findAll('.kerdx-table-selected-row').length == 0) {
+                                params.table.classList.remove('kerdx-selectable');
+                            }
+                        }
+                    }
+                }
+            });
+
+            table.pressed(event => {
+                let target = event.target;
+                if (event.duration > 300) {
+                    if (target.classList.contains('kerdx-table-column-cell') || !this.isnull(target.getParents('.kerdx-table-column-cell'))) {
+                        if (!target.classList.contains('kerdx-table-column-cell')) {
+                            target = target.getParents('.kerdx-table-column-cell');
+                        }
+                        let position = target.dataset.row;
+
+                        if (firstColumn.findAll('.kerdx-table-selected-row').length == 0 && !params.table.classList.contains('kerdx-selectable')) {
+                            params.table.classList.add('kerdx-selectable');
+                            let row = table.findAll(`.kerdx-table-column-cell[data-row="${position}"]`);
+                            for (let i = 0; i < row.length; i++) {
+                                row[i].classList.add('kerdx-table-selected-row');
+                            }
+                            options.remove();
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    createForm(params = { element: '', title: '', columns: 1, contents: {}, required: [], buttons: {} }) {
         let form = this.createElement({
             element: params.element || 'form', attributes: params.attributes, children: [
-                { element: 'h3', attributes: { class: 'form-title' }, text: params.title },
-                { element: 'section', attributes: { class: 'form-contents', style: { gridTemplateColumns: `repeat(${params.columns}, 1fr)` } } },
-                { element: 'section', attributes: { class: 'form-buttons' } },
+                { element: 'h3', attributes: { class: 'kerdx-form-title' }, text: params.title },
+                { element: 'section', attributes: { class: 'kerdx-form-contents', style: { gridTemplateColumns: `repeat(${params.columns}, 1fr)` } } },
+                { element: 'section', attributes: { class: 'kerdx-form-buttons' } },
             ]
         });
 
+        form.classList.add('kerdx-form');
+
         if (this.isset(params.parent)) params.parent.append(form);
         let note;
-        let formContents = form.find('.form-contents');
+        let formContents = form.find('.kerdx-form-contents');
 
         for (let key in params.contents) {
             note = (this.isset(params.contents[key].note)) ? `(${params.contents[key].note})` : '';
             let lableText = params.contents[key].label || this.camelCasedToText(key).toLowerCase();
             let block = formContents.makeElement({
-                element: 'div', attributes: { class: 'form-single-content' }, children: [
-                    { element: 'label', html: lableText, attributes: { class: 'form-label', for: key.toLowerCase() } }
+                element: 'div', attributes: { class: 'kerdx-form-single-content' }, children: [
+                    { element: 'label', html: lableText, attributes: { class: 'kerdx-form-label', for: key.toLowerCase() } }
                 ]
             });
 
             let data = block.makeElement(params.contents[key]);
-            data.classList.add('form-data');
-            if (this.isset(params.contents[key].note)) block.makeElement({ element: 'span', text: params.contents[key].note, attributes: { class: 'form-note' } });
+            data.classList.add('kerdx-form-data');
+            if (this.isset(params.contents[key].note)) block.makeElement({ element: 'span', text: params.contents[key].note, attributes: { class: 'kerdx-form-note' } });
 
             if (this.isset(params.required) && params.required.includes(key)) {
                 data.required = true;
@@ -314,27 +489,57 @@ module.exports = class Components extends Template {
         }
 
         for (let key in params.buttons) {
-            form.find('.form-buttons').makeElement(params.buttons[key]);
+            form.find('.kerdx-form-buttons').makeElement(params.buttons[key]);
         }
 
-        form.makeElement({ element: 'span', attributes: { class: 'form-error' }, state: { name: 'error', owner: `#${form.id}` } });
+        form.makeElement({ element: 'span', attributes: { class: 'kerdx-form-error' }, state: { name: 'error', owner: `#${form.id}` } });
 
         return form;
     }
 
-    popUp(content, container) {
+    picker(params = { title: '', contents: [] }, callback = (event) => { }) {
+        let picker = this.createElement({
+            element: 'div', attributes: { class: 'kerdx-picker' }, children: [
+                { element: 'h3', attributes: { class: 'kerdx-picker-title' }, text: params.title || '' },
+                { element: 'div', attributes: { class: 'kerdx-picker-contents' } }
+            ]
+        });
+
+        for (let content of params.contents) {
+            picker.find('.kerdx-picker-contents').makeElement({ element: 'span', attributes: { class: 'kerdx-picker-single', 'data-name': content }, text: content });
+        }
+
+        picker.addEventListener('dblclick', event => {
+            if (event.target.classList.contains('kerdx-picker-single')) {
+                callback(event.target.dataset.name);
+            }
+        });
+
+        return picker;
+    }
+
+    popUp(content, params = { title: '', attributes: {} }) {
+        let container = params.container || document.body;
+        let title = params.title || '';
+
+        params.attributes = params.attributes || {};
+        params.attributes.style = params.attributes.style || {};
+        params.attributes.style.width = params.attributes.style.width || '50vw';
+        params.attributes.style.height = params.attributes.style.height || '50vh';
+
         let popUp = this.createElement({
-            element: 'div', attributes: { class: 'pop-up', style: { position: 'fixed', top: 0, left: 0, bottom: 0, right: 0, backgroundColor: 'rgba(0, 0, 0, 0.5)', display: 'grid', width: '100vw', height: '100vh', justifyContent: 'center', alignItems: 'center', zIndex: 1000 } }, children: [
+            element: 'div', attributes: { class: 'kerdx-pop-up' }, children: [
                 {
-                    element: 'div', attributes: { id: 'pop-up-window', style: { backgroundColor: 'white', display: 'grid', gridGap: '1em', justifyContent: 'center', alignItems: 'start', width: '50vw', height: '50vh', gridTemplateColumns: '1fr', gridTemplateRows: 'max-content 1fr', overflow: 'hidden' } }, children: [
+                    element: 'div', attributes: { id: 'pop-up-window', class: 'kerdx-pop-up-window' }, children: [
                         {
-                            element: 'div', attributes: { id: 'pop-up-menu', style: { backgroundColor: 'black', color: 'white', display: 'grid', gridGap: '.5em', gridTemplateColumns: 'repeat(2, min-content)', width: 'inherit', justifyContent: 'flex-end', alignItems: 'center' } }, children: [
-                                { element: 'i', attributes: { id: 'toggle-window', class: 'fas fa-expand-alt', style: { color: 'white', height: '20px', width: '20px', padding: '1em' } } },
-                                { element: 'i', attributes: { id: 'close-window', class: 'fas fa-times', style: { color: 'white', height: '20px', width: '20px', padding: '1em' } } }
+                            element: 'div', attributes: { id: 'pop-up-menu', class: 'kerdx-pop-up-menu' }, children: [
+                                { element: 'p', attributes: { id: '', style: { color: 'inherit', padding: '1em' } }, text: title },
+                                { element: 'i', attributes: { id: 'toggle-window', class: 'kerdx-pop-up-control fas fa-expand-alt' } },
+                                { element: 'i', attributes: { id: 'close-window', class: 'kerdx-pop-up-control fas fa-times' } }
                             ]
                         },
                         {
-                            element: 'div', attributes: { id: 'pop-up-content', style: { display: 'grid', overflow: 'auto', justifyContent: 'center', height: '100%', width: '100%' } }, children: [
+                            element: 'div', attributes: { id: 'pop-up-content', class: 'kerdx-pop-up-content' }, children: [
                                 content
                             ]
                         }
@@ -343,626 +548,262 @@ module.exports = class Components extends Template {
             ]
         });
 
+        popUp.find('#pop-up-window').setAttributes(params.attributes);
+
         popUp.find('#toggle-window').addEventListener('click', event => {
             popUp.find('#toggle-window').classList.toggle('fa-expand-alt');
             popUp.find('#toggle-window').classList.toggle('fa-compress-alt');
 
             if (popUp.find('#toggle-window').classList.contains('fa-expand-alt')) {
-                popUp.find('#pop-up-window').css({ height: '50vh', width: '50vw' });
+                popUp.find('#pop-up-window').css({ height: params.attributes.style.height, width: params.attributes.style.width });
             }
             else {
-                popUp.find('#pop-up-window').css({ height: '100vh', width: '100vw' });
+                popUp.find('#pop-up-window').css({ height: 'var(--fill-parent)', width: 'var(--fill-parent)' });
             }
         });
 
         popUp.find('#close-window').addEventListener('click', event => {
             popUp.remove();
         });
-        container = container || document.body;
 
         container.append(popUp);
         return popUp;
     }
 
-    makeCustomElements() {
-        let self = this;
-        if (typeof util == 'undefined') {
+    createSelect(params = { value: '', contents: {}, multiple: false }) {
+        let selected = [],
+            allowNavigate = false,
+            scrollPosition = -1,
+            active;
 
-            class Cell extends HTMLElement {
-
-                constructor(params) {
-                    super();
-                    self.object.copy(this.getAttributes(), this);
-                    let dataType = this.datatype || 'input';
-                    this.shadow = this.attachShadow({ mode: 'open' });
-                    this.dom = self.createElement({
-                        element: 'span', children: [
-                            {
-                                element: 'label', text: this.name, attributes: {
-                                    style: {
-                                        textTransform: 'uppercase',
-                                        backgroundColor: 'transparent',
-                                        color: 'white',
-                                        padding: '0.3em',
-                                        textAlign: 'center',
-                                        fontWeight: '400'
-                                    }
-                                }
-                            },
-                            {
-                                element: dataType, attributes: {
-                                    style: {
-                                        backgroundColor: 'white',
-                                        color: 'black',
-                                        textAlign: 'center',
-                                        border: 'none',
-                                        outline: 'none',
-                                        width: 'unset',
-                                        padding: '0.3em',
-                                        fontWeight: '400'
-                                    }
-                                }
-                            }
-                        ], attributes: { style: { display: 'grid', gridTemplateColumns: 'max-content 1fr', width: '100%' } }
-                    });
-                    this.label = this.dom.find('label');
-                    this.data = this.dom.find('input');
-                    this.shadow.append(this.dom);
+        //create the element
+        let select = this.createElement({
+            element: 'div', attributes: params.attributes, children: [
+                {
+                    element: 'span', attributes: { class: 'kerdx-select-control', }, children: [
+                        { element: 'input', attributes: { class: 'kerdx-select-input', value: params.value || '', ignore: true } },
+                        {
+                            element: 'span', attributes: { class: 'kerdx-select-toggle' }
+                        }
+                    ]
+                },
+                { element: 'input', attributes: { class: 'kerdx-select-search', placeHolder: 'Search me...', ignore: true } },
+                {
+                    element: 'span', attributes: { class: 'kerdx-select-contents' }
                 }
+            ]
+        });
+        select.classList.add('kerdx-select');
+        let setValue = select.getAttribute('value');
+        select.value = [];
+        if (!this.isnull(setValue)) {
+            select.value = this.array.findAll(setValue.split(','), v => {
+                return v.trim() != '';
+            });//remove all empty strings
+        }
 
-                connectedCallback() {
-                    this.data.onChanged(value => {
-                        this.value = value;
-                    });
-                    this.hover({
-                        css: { boxShadow: '1px 1px lightgray, -1px -1px lightgray', border: 'none', transitionDuration: '.2s' }
-                    });
+        select.dataset.active = 'false';
+        //get the contents
+        let contents = select.find('.kerdx-select-contents');
+        let input = select.find('.kerdx-select-input');
+        let search = select.find('.kerdx-select-search');
+        let toggle = select.find('.kerdx-select-toggle');
+        params.contents = params.contents || {};
+        //populate the element contents
+        if (Array.isArray(params.contents)) {//Turn contents to object if its array
+            let items = params.contents;
+            params.contents = {};
+            for (let i = 0; i < items.length; i++) {
+                params.contents[items[i]] = items[i];
+            }
+        }
 
-                    if (!(this.hasCssProperty('background') || this.hasCssProperty('background-color'))) {
-                        this.css({ backgroundColor: 'black' });
-                    }
+        for (let i in params.contents) {
+            let option = contents.makeElement({ element: 'span', attributes: { class: 'kerdx-select-option', value: i } });
+            option.innerHTML = params.contents[i];
+            option.value = i;
+        }
+
+        for (let v of select.value) {
+            input.value += params.contents[v];
+            input.dispatchEvent(new CustomEvent('change'));
+        }
+
+        //enable multiple values
+        let single = (!this.isset(params.multiple) || params.multiple == false);
+
+        let options = select.findAll('.kerdx-select-option');
+
+        //search the contents
+        search.onChanged(value => {
+            for (let i = 0; i < options.length; i++) {
+                if (!options[i].textContent.toLowerCase().includes(value.toLowerCase())) {
+                    options[i].css({ display: 'none' });
+                }
+                else {
+                    options[i].cssRemove(['display']);
                 }
             }
+        });
 
-            class Table extends HTMLElement {
-                constructor(params) {
-                    super();
-                    self.object.copy(this.getAttributes(), this);
-                    this.shadow = this.attachShadow({ mode: 'open' });
-                    this.dom = self.createElement({
-                        element: 'table', attributes: { style: { borderCollapse: 'collapse', width: 'inherit', overflow: 'scroll', textAlign: 'center', fontWeight: '300', fontSize: '1em' } }, children: [
-                            {
-                                element: 'thead', attributes: {}, children: [
-                                    { element: 'tr' }
-                                ]
-                            },
-                            {
-                                element: 'tbody'
-                            }
-                        ],
-                    });
+        //navigate the contents
+        let navigate = event => {
+            allowNavigate = false;
+            if (event.key == 'ArrowDown' && scrollPosition < options.length - 1) {
+                scrollPosition++;
+                allowNavigate = true;
+            }
+            else if (event.key == 'ArrowUp' && scrollPosition > 0) {
+                scrollPosition--;
+                allowNavigate = true;
+            }
+            else if (event.key == 'Enter') {
 
-                    this.thead = this.dom.find('thead');
-                    this.tbody = this.dom.find('tbody');
-
-                    let tableHeadRow = this.thead.find('tr');
-
-                    this.headers = [];
-
-                    if (self.isset(this.contents)) {
-                        this.contents = JSON.parse(this.contents);
-                        for (let content of this.contents) {
-                            let tableBodyRow = this.tbody.makeElement({
-                                element: 'tr', attributes: {
-                                    class: this.rowClass
-                                }
-                            });
-
-                            for (let key in content) {
-                                if (!this.headers.includes(key)) {
-                                    this.headers.push(key);
-                                    let tableHeadCell = tableHeadRow.makeElement({
-                                        element: 'th', text: key, attributes: { 'data-name': `${this.name}-${key}` }
-                                    });
-                                }
-
-                                let tableBodyRowData = tableBodyRow.makeElement({
-                                    element: 'td', text: content[key], attributes: {
-                                        'data-name': `${this.name}-${key}`,
-                                    }
-                                });
-                            }
-                        }
-                    }
-
-                    this.shadow.append(this.dom);
-
-                }
-
-                connectedCallback() {
-                    let rows = this.tbody.findAll('tr');
-
-                    this.dom.findAll('tr').forEach(tr => {
-                        tr.css({ borderCollapse: 'inherit', transform: 'scale(1)', overflow: 'hidden', textTransform: 'uppercase' });
-                    });
-
-                    this.thead.findAll('tr').forEach(tr => {
-                        tr.css({ backgroundColor: 'black', color: 'white', textTransform: 'capitalize' });
-                        tr.findAll('th').forEach(th => {
-                            th.css({ padding: '.5em .1em' });
-                        });
-                    });
-
-                    rows.forEach(tr => {
-                        tr.css({ position: 'relative', cursor: 'pointer', transitionDuration: '.4s', transform: 'scale(1)', overflow: 'hidden' });
-
-                        let position = rows.indexOf(tr);
-                        if (position % 2) {
-                            tr.css({ backgroundColor: 'lightgray' });
-                        }
-                        else {
-                            tr.css({ backgroundColor: 'white' });
-                        }
-
-                        tr.hover({ css: { backgroundColor: 'black', color: 'white' } });
-                    });
-                }
             }
 
-            class Select extends HTMLElement {
-                constructor() {
-                    super();
-                    self.object.copy(this.getAttributes(), this);
-                    this.shadow = this.attachShadow({ mode: 'open' });
-                    this.dom = self.createElement({
-                        element: 'div', attributes: { style: { display: 'grid', maxHeight: '250px', height: 'max-content', gridTemplateRows: 'max-content 1fr' } }, children: [
-                            {
-                                element: 'span', attributes: {
-                                    name: 'control', style: {
-                                        display: 'grid', gridTemplateColumns: '1fr max-content', padding: '.5em', alignItems: 'centers'
-                                    }
-                                }, children: [
-                                    { element: 'input', attributes: { name: 'value', style: { border: 'none', outline: 'none' } } },
-                                    {
-                                        element: 'span', attributes: {
-                                            name: 'toggle',
-                                            style: {
-                                                borderLeft: '2px solid black',
-                                                borderTop: '2px solid black',
-                                                transform: 'rotate(225deg)',
-                                                width: '.5em',
-                                                height: '.5em',
-                                                margin: '.3em',
-                                                cursor: 'pointer'
-                                            }
-                                        }
-                                    },
-                                ]
-                            },
-                            {
-                                element: 'span', attributes: { name: 'content', style: { display: 'block', placeItems: 'flex-start', overflow: 'auto' } }
-                            }
-                        ]
-                    });
-
-                    this.contentsView = this.dom.search('span', { attributes: { name: 'content' } });
-
-                    this.control = this.dom.search('span', { attributes: { name: 'control' } });
-
-                    this.toggle = this.control.find('span');
-
-                    // let contents = this.
-
-                    if (self.isset(this.contents)) {
-                        this.contents = JSON.parse(this.contents);
-                        if (Array.isArray(this.contents)) {//Turn contents to object if its array
-                            let contents = this.contents;
-                            this.contents = {};
-                            for (let i of contents) {
-                                this.contents[i] = i;
-                            }
-                        }
-
-                        for (let i in this.contents) {
-                            let option = this.contentsView.makeElement({ element: 'span', attributes: { name: 'option', value: i, style: { display: 'flex', placeItems: 'center', padding: '.5em', cursor: 'pointer' } } });
-                            option.innerHTML = this.contents[i];
-                            option.value = i;
-                        }
-                    }
-                    this.shadow.append(this.dom);
-
-                    this.value = this.value || '';
+            if (allowNavigate) {
+                active = contents.find('.kerdx-select-active-option');
+                if (!this.isnull(active)) {
+                    active.classList.remove('kerdx-select-active-option');
                 }
 
-                connectedCallback() {
-                    this.options = this.dom.searchAll('span', { attributes: { name: 'option' } });
-                    this.activeOptions = this.options;
+                options[scrollPosition].classList.add('kerdx-select-active-option');
+            }
+        }
 
-                    this.css({ overflow: 'hidden', padding: 'unset' });
+        //toggle the contents
+        toggle.addEventListener('click', event => {
+            let active = select.dataset.active == 'true';
+            if (active) {
+                deactivate(active);
+            }
+            else {
+                activate(active);
+            }
+        });
 
-                    self.array.each(this.options, (option) => {
-                        option.hover({ css: { boxShadow: '1px 1px #aaa, -1px -1px #aaa' } });
-                    });
+        //show the contents
+        let inView, top, bottom;
+        document.body.css({ overflow: 'auto' })
 
-                    let currentInput, currentOption = -1, activeOption;
-                    this.input = this.dom.find('input');
-                    let text = [];
-                    if (this.value != '') {
-                        let values = this.value.split(',');
-                        for (let value of values) {
-                            text.push(this.contents[value]);
-                        }
+        let placeContents = () => {
+            top = select.position().top;
+            bottom = document.body.clientHeight - select.position().top;
+
+            if (top > bottom) {
+                contents.css({ top: -contents.position().height + 'px' });
+            }
+            else {
+                contents.css({ top: select.position().height + 'px' });
+            }
+        }
+
+        //show contents
+        let activate = () => {
+            if (select.inView('body')) {
+                input.addEventListener('keydown', navigate, false);
+                search.css({ display: 'flex' });
+                contents.css({ display: 'flex' });
+                placeContents();
+                select.dataset.active = 'true';
+            }
+        }
+
+        //hide the contents
+        let deactivate = () => {
+            input.removeEventListener('keydown', navigate, false);
+            search.cssRemove(['display']);
+            contents.cssRemove(['display']);
+            select.dataset.active = 'false';
+        }
+
+        //update the selected
+        let update = (values) => {
+            selected = [];
+            values = values.split(',');
+            for (let value of values) {
+                value = value.trim();
+                for (let i in params.contents) {
+                    if (params.contents[i] == value) {
+                        value = i;
                     }
-                    this.input.value = text;
-
-                    this.input.onChanged((value, event) => {
-                        this.update(value);
-                        this.noUpdate = false;
-
-                        if (event.key == 'Enter') {
-                            let value = this.input.value.trim();
-                            if (value.length != value.lastIndexOf(',') + 1) {
-                                value += ',';
-                            }
-                            this.input.value = value;
-                        }
-
-                        this.navigate = event.key == 'ArrowDown' || event.key == 'ArrowUp';
-
-                        if (this.navigate) {
-                            this.noUpdate = true;
-                            if (event.key == 'ArrowDown') {
-                                if (currentOption + 1 != this.activeOptions.length) {
-                                    currentOption++;
-                                }
-                            }
-                            else if (event.key == 'ArrowUp') {
-                                if (currentOption > 0) {
-                                    currentOption--;
-                                }
-                            }
-
-                            activeOption = this.activeOptions[currentOption];
-
-                            this.activeOptions.forEach(option => {
-                                if (option == activeOption) {
-                                    option.css({ border: '1px dashed blue' });
-                                } else {
-                                    option.cssRemove(['border']);
-                                }
-                            });
-                            return;
-                        }
-                        else {
-                            currentOption = -1;
-                        }
-
-                        if (event.key == 'Escape') {
-                            this.deactivate();
-                            return;
-                        }
-
-                        this.activeOptions = [];
-
-                        currentInput = this.input.value.slice(this.input.value.lastIndexOf(',') + 1).trim().toLowerCase();
-                        if (Object.values(this.contents).includes(currentInput)) currentInput = '';
-
-                        self.array.each(this.options, (option) => {
-                            option.cssRemove(['border']);
-                            if (option.getAttribute('value').toLowerCase().includes(currentInput) || currentInput == '') {
-                                if (currentOption == '') currentOption = this.options.indexOf(option) - 1;
-                                option.css({ display: 'flex' });
-                                this.activeOptions.push(option);
-                            }
-                            else {
-                                option.css({ display: 'none' });
-                            }
-                        });
-                    });
-
-                    this.toggle.action = 'deactivate';
-                    this.deactivate();
-
-                    this.dom.addEventListener('click', event => {
-                        let target = event.target;
-                        if (target.getAttribute('name') != 'option') target.getParents('option');
-
-                        if (!self.isnull(target) && target.getAttribute('name') == 'option') {
-                            let value = this.prepareValue(target.value)
-                            this.input.value = value;
-                            this.input.dispatchEvent(new CustomEvent('change'));
-                        }
-                    });
-
-                    this.control.addEventListener('click', event => {
-                        if (event.target == this.toggle) {
-                            this[this.toggle.action]();
-                        }
-                        else {
-                            this.activate();
-                        }
-                    });
                 }
 
-                prepareValue(key) {
-                    let value = this.contents[key];
-                    if (self.isset(this.multiple) && this.multiple != 'false') {
-                        if (this.multiple != 'single') {
-                            if (this.input.value != '') {
-                                value = this.input.value + `, ${value}`;
-                            }
-                        }
-                        else {
-                            if (this.input.value.includes(`, ${value}`)) {
-                                value = this.input.value.replace(`, ${value}`, '');
-                            }
-                            else if (this.input.value.includes(`${value}, `)) {
-                                value = this.input.value.replace(`${value}, `, '');
-                            }
-                            else if (this.input.value.includes(value)) {
-                                value = this.input.value.replace(value, '');
-                            }
-                            else {
-                                if (this.input.value != '') {
-                                    if (this.input.value.trim().length == this.input.value.trim().lastIndexOf(',') + 1) {
-                                        value = this.input.value + ` ${value}`;
-                                    }
-                                    else {
-                                        value = this.input.value + `, ${value}`;
-                                    }
-                                }
-                            }
-                        }
-                    }
+                selected.push(value);
+            }
 
-                    return value;
-                }
+            select.value = selected;
+            input.value = values;
+        }
 
-                update(value) {
-                    value = value.split(',');
+        //check when activated
+        select.bubbledEvent('click', event => {
+            if (event.target != toggle && select.dataset.active == 'false') {
+                activate();
+            }
 
-                    let keys = Object.keys(this.contents);;
-                    let values = Object.values(this.contents);
-
-                    let currentKeys = [];
-                    for (let i = 0; i < value.length; i++) {
-                        let trimmed = value[i].trim();
-                        if (self.isset(keys[values.indexOf(trimmed)])) {
-                            currentKeys.push(keys[values.indexOf(trimmed)]);
-                        }
-                        else if (trimmed != '') {
-                            currentKeys.push(trimmed);
-                        }
-
-                        if (this.external != 'true' && !values.includes(trimmed)) {
-                            value = self.array.popIndex(value, i);
-                        }
-                    }
-
-                    value = value.join(',');
-                    currentKeys = currentKeys.join(',');
-
-                    if (this.keepValue == 'true') {
-                        this.value = value;
-                        this.setAttribute('value', value);
+            if (event.target.classList.contains('kerdx-select-option')) {
+                let text = params.contents[event.target.value];
+                if (params.multiple == 'single') {
+                    if (input.value.includes(text)) {
+                        input.value = input.value.replace(text, '');
                     }
                     else {
-                        this.value = currentKeys;
-                        this.setAttribute('value', currentKeys);
-                    }
-
-                    this.dispatchEvent(new Event('change'));
-
-                    if (!self.isset(this.multiple)) {
-                        this.deactivate();
-                    }
-                    this.input.focus();
-                }
-
-                deactivate() {
-                    if (this.toggle.action == 'deactivate') {
-                        this.control.css({ borderBottom: 'none' });
-                        this.toggle.css({ transform: 'rotate(225deg)', });
-                        this.contentsView.css({ display: 'none' });
-                        this.toggle.action = 'activate';
-                        this.dom.css({ height: 'unset' });
+                        input.value += `, ${text}`;
                     }
                 }
-
-                activate() {
-                    if (this.toggle.action == 'activate') {
-                        this.control.css({ borderBottom: '1px solid black' });
-                        this.toggle.css({ transform: 'rotate(45deg)' });
-                        this.contentsView.css({ display: 'block' });
-                        this.toggle.action = 'deactivate';
-                        this.dom.css({ height: '200px' });
-                    }
+                else {
+                    input.value += `, ${text}`;
                 }
 
-                attributeChangedCallback() {
+                input.dispatchEvent(new CustomEvent('change'));
 
+                if (single) {
+                    deactivate();
+                }
+            }
+        });
+
+        //check when deactivated
+        select.notBubbledEvent('click', event => {
+            if (select.dataset.active == 'true') {
+                deactivate();
+            }
+        });
+
+        //when input value changes
+        input.addEventListener('change', event => {
+            let values = input.value.split(',');
+
+            values = this.array.findAll(values, value => {
+                return value.trim() != '';
+            });
+
+            values = this.array.each(values, value => {
+                return value.trim();
+            });
+
+            if (!single) {
+                if (params.multiple == 'single') {
+                    values = this.array.toSet(values);
                 }
             }
 
-            class Choose extends HTMLElement {
-                constructor() {
-                    super();
+            values = values.join(', ');
+            update(values);
+        });
 
-                    self.object.copy(this.getAttributes(), this);
-                    this.attachShadow({ mode: 'open' });
-
-                    this.dom = self.createElement({
-                        element: 'div', attributes: { name: 'dom' }, children: [
-                            {
-                                element: 'span', attributes: {
-                                    style: {
-                                        display: 'grid', gridTemplateColumns: '1fr max-content', padding: '.5em', borderBottom: '1px solid black'
-                                    }
-                                }, children: [
-                                    { element: 'a', attributes: { style: { textAlign: 'left', padding: '.2em' } }, text: this.title },
-                                    {
-                                        element: 'button', attributes: {
-                                            style: {
-                                                padding: '.5em', backgroundColor: 'black', color: 'white', border: '1px solid black', cursor: 'pointer'
-                                            }
-                                        }, text: 'Close', state: { name: 'close', owner: 'name', value: 'dom' }
-                                    }
-                                ]
-                            },
-                            {
-                                element: 'span', attributes: {
-                                    style: {
-                                        display: 'flex', place: 'center', padding: '1em'
-                                    }
-                                }, state: { name: 'choices', owner: 'name', value: 'dom' }
-                            }
-                        ]
-                    });
-
-                    this.choicesView = this.dom.getState({ name: 'choices' });
-                    if (self.isset(this.choices)) {
-                        this.choices = this.choices.split(',');
-                        for (let choice of this.choices) {
-                            this.choicesView.makeElement({
-                                element: 'button', attributes: { name: 'choice', title: choice, style: { margin: '1em', backgroundColor: 'white', cursor: 'pointer', border: '1px solid black' } }, text: choice
-                            });
-                        }
-                    }
-
-                    this.shadowRoot.append(this.dom);
-                }
-
-                connectedCallback() {
-                    this.css({ border: '1px solid black', width: 'max-content' });
-
-                    this.dom.addEventListener('click', event => {
-                        if (event.target == this.dom.getState({ name: 'close' })) {
-                            this.dispatchEvent(new CustomEvent('picked'));
-                            this.remove();
-                        }
-                        else if (event.target.getAttribute('name') == 'choice') {
-                            this.picked = event.target.textContent;
-                            this.dispatchEvent(new CustomEvent('picked'));
-                            this.remove();
-                        }
-                    });
-                }
+        //align contents on scroll
+        window.addEventListener('scroll', event => {
+            if (select.inView('body')) {
+                placeContents();
             }
+        });
 
-            class Form extends HTMLElement {
-                constructor() {
-                    super();
-                    self.object.copy(this.getAttributes(), this);
-                    this.attachShadow({ mode: 'open' });
-
-                    this.columns = this.columns || 1;
-
-                    this.dom = self.createElement({
-                        element: 'form', attributes: { name: 'dom', style: { display: 'grid', gridGap: '.5em' } }
-                        , children: [
-                            { element: 'span', attributes: { class: 'form-title', style: { display: 'flex', placeContent: 'center', padding: '.5em', color: 'white', backgroundColor: 'black' } }, text: this.title || '', state: { name: 'title', owner: 'name', value: 'dom' } },
-                            { element: 'section', attributes: { style: { display: 'grid', gridTemplateColumns: `repeat(${this.columns}, 1fr)` } }, state: { name: 'contents', owner: 'name', value: 'dom' } },
-                            { element: 'section', attributes: { style: { display: 'flex', placeContent: 'center', margin: '.5em 0em' } }, state: { name: 'buttons', owner: 'name', value: 'dom' } },
-                            { element: 'span', attributes: { style: { placeItems: 'center', padding: '.5em', color: 'white', backgroundColor: 'green', display: 'none' } }, state: { name: 'error', owner: 'name', value: 'dom' } }
-                        ]
-                    });
-
-                    this.formTitle = this.dom.getState('title');
-                    this.formContents = this.dom.getState('contents');
-                    this.formButtons = this.dom.getState('buttons');
-                    this.formError = this.dom.getState('error');
-
-                    if (self.isset(this.contents)) {
-                        this.contents = JSON.parse(this.contents);
-                        for (let key in this.contents) {
-                            let note = (self.isset(this.contents[key].note)) ? `(${this.contents[key].note})` : '';
-                            let block = this.formContents.makeElement({
-                                element: 'div', attributes: { name: 'formSingleContent', style: { display: 'grid', padding: '.5em' } }, children: [
-                                    { element: 'label', text: self.camelCasedToText(key).toLowerCase(), attributes: { name: 'formLabel', for: key.toLowerCase(), style: { color: '#666666', textTransform: 'capitalize', textAlign: 'justify' } } }
-                                ]
-                            });
-
-                            let data = block.makeElement(this.contents[key]);
-                            data.css({
-                                border: '1px solid #666666', borderRadius: '10px', padding: '.3em .1em',
-                                textAlign: 'justify', minWidth: 'unset', minHeight: '50px'
-                            });
-                            if (self.isset(this.contents[key].note)) block.makeElement({ element: 'span', text: this.contents[key].note, attributes: { name: 'formNote' } });
-                        }
-                    }
-
-                    if (self.isset(this.buttons)) {
-                        this.buttons = JSON.parse(this.buttons);
-                        for (let key in this.buttons) {
-                            let button = this.formButtons.makeElement(this.buttons[key]);
-                            button.css({ padding: '1em', textTransform: 'uppercase', border: '1px solid black', color: 'black', backgroundColor: 'white', cursor: 'pointer' });
-                        }
-                    }
-
-                    this.shadowRoot.append(this.dom);
-                }
-
-                connectedCallback() {
-                    this.dom.getState({ name: 'submit' }).addEventListener('click', event => {
-                        event.preventDefault();
-                        this.dom.setState({ name: 'error', text: '', attributes: { style: { background: 'green', display: 'none' } } });
-
-                        if (!self.validateForm(this.dom, ['select-element', 'input'])) {
-                            this.dom.setState({ name: 'error', text: 'Form is not filled correctly', attributes: { style: { background: 'red', display: 'flex' } } });
-                            return;
-                        }
-
-                        this.dispatchEvent(new CustomEvent('submit'));
-                    });
-                }
-
-                submit() {
-                    // let submitButton =
-                }
-            }
-
-            class Pattern extends HTMLElement {
-                constructor() {
-                    super();
-                    self.object.copy(this.getAttributes(), this);
-                    this.attachShadow({ mode: 'open' });
-
-                    this.dom = self.createElement({ element: 'div', attributes: { style: 'grid' } });
-
-                    this.rows = this.rows || 4;
-                    this.colors = (this.colors || 'black,white').split(',');
-                    this.columns = this.columns || 8;
-
-                    for (let i = 0; i < this.rows; i++) {
-                        let row = this.dom.makeElement({
-                            element: 'span', attributes: { style: { display: 'grid', gridTemplateColumns: `repeat(${this.columns}, 1fr)` } }
-                        });
-
-                        for (let j = 0; j < this.columns; j++) {
-                            row.makeElement({ element: 'span', attributes: { style: { width: '100%', height: this.blockheight, backgroundColor: this.colors[(i + j) % this.colors.length] } } })
-                        }
-                    }
-
-                    this.shadowRoot.append(this.dom);
-                }
-
-                connectedCallback() {
-                    this.css({ position: 'absolute', zIndex: '-1', top: '0', left: '0', bottom: '0', right: '0' });
-                    this.parentNode.css({ position: 'relative' });
-                }
-            }
-
-            customElements.define('cell-element', Cell);
-            customElements.define('table-element', Table);
-            customElements.define('select-element', Select);
-            customElements.define('choose-element', Choose);
-            customElements.define('form-element', Form);
-            customElements.define('pattern-element', Pattern);
-
-        }
+        return select;
     }
 
-    choose(params) {
+    choose(params = { note: '', options: [] }) {
         let chooseWindow = this.createElement({
             element: 'span', attributes: { class: 'crater-choose' }, children: [
                 { element: 'p', attributes: { class: 'crater-choose-note' }, text: params.note },
@@ -995,7 +836,7 @@ module.exports = class Components extends Template {
         };
     }
 
-    textEditor(params) {
+    textEditor(params = { id: '', width: 'max-width' }) {
         params = params || {};
         params.id = params.id || 'text-editor';
         let textEditor = this.createElement({
@@ -1012,7 +853,7 @@ module.exports = class Components extends Template {
                         height: max-content;
                         border: 2px solid rgb(40, 110, 89);
                         border-radius: 8px 8px 0px 0px;
-                        background-color: white;
+                        background-color: var(--primary-color);
                     }
                     
                     div#crater-rich-text-area{
@@ -1027,7 +868,7 @@ module.exports = class Components extends Template {
                         display: grid;
                         grid-template-rows: max-content max-content;
                         background-color: rgb(40, 110, 89);
-                        color: white;
+                        color: var(--primary-color);
                         text-align: left;
                     }
 
@@ -1037,7 +878,7 @@ module.exports = class Components extends Template {
                     }
 
                     div#crater-the-ribbon button{
-                        color: white;
+                        color: var(--primary-color);
                         border: none;
                         outline: none;
                         background-color: transparent;
@@ -1220,5 +1061,237 @@ module.exports = class Components extends Template {
         }, false);
 
         return textEditor;
+    }
+
+    displayData(data = {}, container) {
+        let lineNumbers = [];
+        let displayString = (value) => {
+            return this.createElement({ element: 'span', attributes: { class: 'kerdx-data-str' }, text: `"${value}"` });
+        }
+
+        let displayLiteral = (value) => {
+            return this.createElement({ element: 'span', attributes: { class: 'kerdx-data-lit' }, text: `${value}` });
+        }
+
+        let displayPunctuation = (value) => {
+            return this.createElement({ element: 'span', attributes: { class: 'kerdx-data-pun' }, text: `${value}` });
+        }
+
+        let displayNewLine = () => {
+            increment++;
+            return this.createElement({ element: 'span', attributes: { class: 'kerdx-data-pln' } });
+        }
+
+        let displayItem = (value, params) => {
+            params = params || {};
+            let item = this.createElement({ element: 'span', attributes: { class: 'kerdx-data-item' } });
+            lineNumbers.push(item);
+            if (this.isset(params.key)) {
+                item.makeElement([
+                    displayString(params.key),
+                    displayPunctuation(' : '),
+                    chooseDisplay(value),
+                ]);
+            }
+            else {
+                item.makeElement([
+                    chooseDisplay(value),
+                ]);
+            }
+            return item;
+        }
+
+        let displayArray = (value) => {
+            let array = this.createElement({ element: 'span', attributes: { class: 'kerdx-data-block' } });
+            lineNumbers.push(array);
+
+            array.makeElement(displayPunctuation('['));
+            let item;
+            for (let i = 0; i < value.length; i++) {
+                item = array.makeElement(displayItem(value[i]));
+
+                if (i != value.length - 1) {
+                    item.makeElement(displayPunctuation(','));
+                }
+            }
+            array.makeElement(displayPunctuation(']'));
+            return array;
+        }
+
+        let displayObject = (value) => {
+            let object = this.createElement({ element: 'span', attributes: { class: 'kerdx-data-block' } });
+            lineNumbers.push(object);
+
+            object.makeElement(displayPunctuation('{'));
+            let item;
+            let i = 0;
+            for (let key in value) {
+                item = object.makeElement(displayItem(value[key], { key }));
+                if (i != Object.keys(value).length - 1) {
+                    item.makeElement(displayPunctuation(','));
+                }
+                i++;
+            }
+            object.makeElement(displayPunctuation('}'));
+            return object;
+        }
+
+        let chooseDisplay = (value) => {
+            if (typeof value == "string") {
+                return displayString(value);
+            }
+            else if (Array.isArray(value)) {
+                return displayArray(value);
+            }
+            else if (typeof value == 'object') {
+                return displayObject(value);
+            }
+            else {
+                return displayLiteral(value);
+            }
+        }
+        let lineHeight = '25px';
+        let displayed = container.makeElement({
+            element: 'pre', attributes: { class: 'kerdx-data-window' }, children: [
+                {
+                    element: 'span', attributes: { class: 'kerdx-data-line', style: { lineHeight } }
+                },
+                {
+                    element: 'span', attributes: { class: 'kerdx-data-toggles' }
+                },
+                {
+                    element: 'code', attributes: { class: 'kerdx-data-code', style: { lineHeight } }, children: [
+                        chooseDisplay(data)
+                    ]
+                }
+            ]
+        });
+
+        let code = displayed.find('.kerdx-data-code'),
+            numbers,
+            toggleButtons,
+            height = code.position().height,
+            lines = displayed.find('.kerdx-data-line'),
+            toggles = displayed.find('.kerdx-data-toggles'),
+            count = height / parseInt(lineHeight),
+            items = code.findAll('.kerdx-data-item'),
+            blocks = code.findAll('.kerdx-data-block');
+
+        let setRange = (block) => {
+            let start = Math.floor((block.position().top - code.position().top) / parseInt(lineHeight)) + 1;
+            let end = Math.floor((block.position().bottom - code.position().top) / parseInt(lineHeight)) + 1;
+            block.range = kerdx.range(end, start);
+        }
+
+        let setNumbers = () => {
+            for (let i = 0; i < lineNumbers.length; i++) {
+                lines.makeElement([
+                    { element: 'a', html: `${i / 1 + 1}`, attributes: { class: 'kerdx-data-line-number' } }
+                ]);
+            }
+        }
+
+        let setToggles = () => {
+            for (let i = 0; i < blocks.length; i++) {
+                let top = blocks[i].position().top - code.position().top + 6 + 'px'
+                let toggle = toggles.makeElement({ element: 'i', attributes: { class: 'kerdx-data-toggles-button fas fa-arrow-down', style: { top } } });
+
+                toggle.block = blocks[i];
+                blocks[i].toggle = toggle;
+            }
+        }
+
+        let alignToggles = () => {
+            for (let i = 0; i < toggleButtons.length; i++) {
+                toggleButtons[i].css({
+                    top: toggleButtons[i].block.position().top - code.position().top + 6 + 'px'
+                });
+            }
+        }
+
+        let hideNumbers = (block) => {
+            for (let i = 0; i < block.range.length; i++) {
+                if (!this.isset(numbers[block.range[i]].controller)) {
+                    numbers[block.range[i]].css({ display: 'none' });
+                    numbers[block.range[i]].controller = block;
+                }
+            }
+        }
+
+        let hideBlock = (block) => {
+            let blockContent = block.children;
+            for (let i = 0; i < blockContent.length; i++) {
+                if (blockContent[i].classList.contains('kerdx-data-item')) {
+                    blockContent[i].css({ display: 'none' });
+
+                    blockContent[i].findAll('.kerdx-data-block').forEach(b => {
+                        if (!this.isset(b.toggle.controller)) {
+                            b.toggle.controller = block;
+                            b.toggle.css({ display: 'none' });
+                        }
+                    });
+                }
+            }
+        }
+
+        let showNumbers = (block) => {
+            for (let i = 0; i < block.range.length; i++) {
+                if (numbers[block.range[i]].controller == block) {
+                    numbers[block.range[i]].cssRemove(['display']);
+                    delete numbers[block.range[i]].controller;
+                }
+            }
+        }
+
+        let showBlock = (block) => {
+            let blockContent = block.children;
+            for (let i = 0; i < blockContent.length; i++) {
+                if (blockContent[i].classList.contains('kerdx-data-item')) {
+                    blockContent[i].cssRemove(['display']);
+
+                    blockContent[i].findAll('.kerdx-data-block').forEach(b => {
+                        if (b.toggle.controller == block) {
+                            delete b.toggle.controller;
+                            b.toggle.cssRemove(['display']);
+                        }
+                    });
+                }
+            }
+        }
+
+        lineNumbers.push(undefined)
+
+        displayed.onAdded(event => {
+            setNumbers();
+            setToggles();
+
+            numbers = lines.findAll('.kerdx-data-line-number');
+            toggleButtons = toggles.findAll('.kerdx-data-toggles-button');
+
+            let blockContent, start, end;
+            displayed.addEventListener('click', event => {
+                let target = event.target;
+                if (target.classList.contains('kerdx-data-toggles-button')) {//if toggled
+                    if (!this.isset(target.block.range)) {
+                        setRange(target.block);
+                    }
+
+                    if (target.classList.contains('fa-arrow-down')) {//if toggle to show
+                        hideNumbers(target.block);
+                        hideBlock(target.block);
+                    }
+                    else {
+                        showNumbers(target.block);
+                        showBlock(target.block);
+                    }
+
+                    target.classList.toggle('fa-arrow-up');
+                    target.classList.toggle('fa-arrow-down');
+                    alignToggles();
+                }
+            });
+        });
+
+        return displayed;
     }
 }

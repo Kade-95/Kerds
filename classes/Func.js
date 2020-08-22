@@ -34,7 +34,7 @@ module.exports = class Func {
         return value;
     }
 
-    indexAt(haystack, needle, pos) {
+    indexAt(haystack = '', needle = '', pos = 0) {
         pos = pos || 0;
         if (haystack.indexOf(needle) == -1) {
             return -1;
@@ -56,7 +56,7 @@ module.exports = class Func {
         return index;
     }
 
-    combine(haystack, first, second, pos) {
+    combine(haystack = '', first = '', second = '', pos = 0) {
         pos = pos || 0;//initialize position if not set
         let at1 = pos,
             at2 = first === second ? pos + 1 : pos; //check if it is the same and change position
@@ -70,7 +70,7 @@ module.exports = class Func {
         return haystack.slice(start, end + second.length);
     }
 
-    allCombine(haystack, first, second) {
+    allCombine(haystack = '', first = '', second = '') {
         let pos = 0;
         let all = [];
         let found;
@@ -85,7 +85,7 @@ module.exports = class Func {
         return all;
     }
 
-    inBetween(haystack, first, second, pos) {
+    inBetween(haystack = '', first = '', second = '', pos = 0) {
         pos = pos || 0;//initialize position if not set
         let at1 = pos,
             at2 = first === second ? pos + 1 : pos; //check if it is the same and change position
@@ -99,7 +99,7 @@ module.exports = class Func {
         return haystack.slice(start + first.length, end);
     }
 
-    allInBetween(haystack, first, second) {
+    allInBetween(haystack = '', first = '', second = '') {
         let pos = 0;
         let all = [];
         let found;
@@ -144,7 +144,7 @@ module.exports = class Func {
         return months;
     }
 
-    jsStyleName(name) {
+    jsStyleName(name = '') {
         let newName = '';
         for (let i = 0; i < name.length; i++) {
             if (name[i] == '-') {
@@ -156,7 +156,7 @@ module.exports = class Func {
         return newName;
     }
 
-    cssStyleName(name) {
+    cssStyleName(name = '') {
         let newName = '';
         for (let i = 0; i < name.length; i++) {
             if (this.isCapital(name[i])) newName += '-';
@@ -166,7 +166,7 @@ module.exports = class Func {
         return newName;
     }
 
-    textToCamelCased(text) {
+    textToCamelCased(text = '') {
         let value = '';
         for (let i in text) {
             if (text[i] == ' ') continue;
@@ -177,7 +177,7 @@ module.exports = class Func {
         return value;
     }
 
-    camelCasedToText(camelCase) {
+    camelCasedToText(camelCase = '') {
         let value = '';
         for (let i in camelCase) {
             if (i != 0 && this.isCapital(camelCase[i])) value += ` ${camelCase[i].toLowerCase()}`;
@@ -186,9 +186,13 @@ module.exports = class Func {
         return value;
     }
 
-    random(params) {
+    emptyObject(obj) {
+        return JSON.stringify(obj) = JSON.stringify({});
+    }
+
+    random(params = { limit: 1, range: 1 }) {
         let random;
-        if (!this.isset(params)) {
+        if (this.emptyObject(params)) {
             random = Math.random() * 2 - 1;
         }
         else if (this.isset(params.limit)) {
@@ -200,7 +204,7 @@ module.exports = class Func {
         return random;
     }
 
-    range(end, start) {
+    range(end = 1, start = 1) {
         let value = [];
         for (let i = start || 0; i < end; i++) {
             value.push(i);
@@ -209,7 +213,7 @@ module.exports = class Func {
         return value;
     }
 
-    generateRandom(length) {
+    generateRandom(length = 5) {
         var string = this.capitals + this.smalls + this.digits;
         var alphanumeric = '';
         for (var i = 0; i < length; i++) {
@@ -218,7 +222,7 @@ module.exports = class Func {
         return alphanumeric;
     }
 
-    generateKey(length) {
+    generateKey(length = 5) {
         let key = Date.now().toString(length) + Math.random().toString(length).slice(2);//generate the key
         return key;
     }
@@ -229,7 +233,7 @@ module.exports = class Func {
         return this.urlMerger(url, params.toAdd);
     }
 
-    addCommaToMoney(money) {
+    addCommaToMoney(money = '') {
         var inverse = '';
         for (var i = money.length - 1; i >= 0; i--) {
             inverse += money[i];
@@ -251,13 +255,13 @@ module.exports = class Func {
         return inverse;
     }
 
-    isCapital(value) {
+    isCapital(value = '') {
         if (value.length == 1) {
             return this.capitals.includes(value);
         }
     }
 
-    capitalize(value) {
+    capitalize(value = '') {
         if (!this.isCapital(value[0])) {
             value = value.split('');
             value[0] = this.capitals[this.smalls.indexOf(value[0])];
@@ -266,7 +270,7 @@ module.exports = class Func {
         return value;
     }
 
-    flip(haystack) {
+    flip(haystack = '') {
         var flipped = (Array.isArray(haystack)) ? [] : '';
         for (var i = haystack.length - 1; i >= 0; i--) {
             if (Array.isArray(haystack)) {
@@ -280,19 +284,19 @@ module.exports = class Func {
         return flipped;
     }
 
-    isSmall(value) {
+    isSmall(value = '') {
         if (value.length == 1) {
             return this.smalls.includes(value);
         }
     }
 
-    isSymbol(value) {
+    isSymbol(value = '') {
         if (value.length == 1) {
             return this.symbols.includes(value);
         }
     }
 
-    isName(value) {
+    isName(value = '') {
         for (var x in value) {
             if (this.isDigit(value[x])) {
                 return false;
@@ -301,7 +305,7 @@ module.exports = class Func {
         return true;
     }
 
-    isNumber(value) {
+    isNumber(value = '') {
         for (var x in value) {
             if (!this.isDigit(value[x])) {
                 return false;
@@ -310,7 +314,7 @@ module.exports = class Func {
         return value;
     }
 
-    isPasswordValid(value) {
+    isPasswordValid(value = '') {
         var len = value.length;
         if (len > 7) {
             for (var a in value) {
@@ -334,12 +338,12 @@ module.exports = class Func {
         return false;
     }
 
-    isSubString(haystack, value) {
+    isSubString(haystack = '', value = '') {
         if (haystack.indexOf(value) != -1) return true;
         return false;
     }
 
-    isDigit(value) {
+    isDigit(value = '') {
         value = new String(value)
         if (value.length == 1) {
             return this.digits.includes(value);
@@ -347,7 +351,7 @@ module.exports = class Func {
         return false;
     }
 
-    isEmail(value) {
+    isEmail(value = '') {
         var email_parts = value.split('@');
         if (email_parts.length != 2) {
             return false;
@@ -370,11 +374,11 @@ module.exports = class Func {
         return true;
     }
 
-    objectLength(object) {
+    objectLength(object = {}) {
         return Object.keys(object).length;
     }
 
-    isSpaceString(value) {
+    isSpaceString(value = '') {
         if (value == '') {
             return true;
         } else {
@@ -387,7 +391,7 @@ module.exports = class Func {
         return true;
     }
 
-    hasString(haystack, needle) {
+    hasString(haystack = '', needle = '') {
         for (var x in haystack) {
             if (needle == haystack[x]) {
                 return true;
@@ -396,7 +400,7 @@ module.exports = class Func {
         return false;
     }
 
-    trem(needle) {
+    trem(needle = '') {
         //remove the prepended spaces
         if (needle[0] == ' ') {
             var new_needle = '';
@@ -421,7 +425,7 @@ module.exports = class Func {
         return needle;
     }
 
-    stringReplace(word, from, to) {
+    stringReplace(word = '', from = '', to = '') {
         var value = '';
         for (let i = 0; i < word.length; i++) {
             if (word[i] == from) {
@@ -434,14 +438,14 @@ module.exports = class Func {
         return value;
     }
 
-    converToRealPath(path) {
+    converToRealPath(path = '') {
         if (path[path.length - 1] != '/') {
             path += '/';
         }
         return path;
     }
 
-    isSpacialCharacter(char) {
+    isSpacialCharacter(char = '') {
         var specialcharacters = "'\\/:?*<>|!.";
         for (var i = 0; i < specialcharacters.length; i++) {
             if (specialcharacters[i] == char) {
@@ -451,7 +455,7 @@ module.exports = class Func {
         return false;
     }
 
-    countChar(haystack, needle) {
+    countChar(haystack = '', needle = '') {
         var j = 0;
         for (var i = 0; i < haystack.length; i++) {
             if (haystack[i] == needle) {
@@ -461,7 +465,7 @@ module.exports = class Func {
         return j;
     }
 
-    occurancesOf(haystack, needle) {
+    occurancesOf(haystack = '', needle = '') {
         let occurances = [];
         for (let i = 0; i < haystack.length; i++) {
             if (haystack[i] === needle) {
@@ -477,7 +481,7 @@ module.exports = class Func {
     }
 
     isfunction(variable) {
-        return (typeof variable !== 'function');
+        return (typeof variable === 'function');
     }
 
     isnull(variable) {
@@ -488,7 +492,7 @@ module.exports = class Func {
         return this.isset(variable) && !this.isnull(variable);
     }
 
-    async runParallel(functions, callBack) {
+    async runParallel(functions = [], callBack = () => { }) {
         var results = {};
         for (var f in functions) {
             results[f] = await functions[f];
@@ -500,7 +504,7 @@ module.exports = class Func {
         return (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
     }
 
-    urlMerger(splitUrl, lastQuery) {
+    urlMerger(splitUrl = '', lastQuery = '') {
         var hostType = (this.isset(splitUrl.hostType)) ? splitUrl.hostType : 'http';
         var hostName = (this.isset(splitUrl.hostName)) ? splitUrl.hostName : '';
         var port = (this.isset(splitUrl.host)) ? splitUrl.port : '';
@@ -518,7 +522,7 @@ module.exports = class Func {
         return location;
     }
 
-    urlSplitter(location) {
+    urlSplitter(location = '') {
         if (this.isset(location)) {
             location = location.toString();
             var httpType = (location.indexOf('://') === -1) ? null : location.split('://')[0];
@@ -547,7 +551,7 @@ module.exports = class Func {
         }
     }
 
-    getUrlVars(location) {
+    getUrlVars(location = '') {
         location = location.toString();
         var queries = (location.indexOf('?') === -1) ? null : location.split('?').pop(0);
         var vars = {};

@@ -48,7 +48,7 @@ module.exports = class Template extends JSElements {
             }
         };
 
-        Element.prototype.commonAncestor = function (elementA = new Element(), elementB = new Element()) {
+        Element.prototype.commonAncestor = function (elementA, elementB) {
             for (let ancestorA of elementA.parents()) {
                 for (let ancestorB of elementB.parents()) {
                     if (ancestorA == ancestorB) return ancestorA;
@@ -295,7 +295,7 @@ module.exports = class Template extends JSElements {
         }
 
         //Get the nodes between two child elements
-        Element.prototype.nodesBetween = function (elementA = new Element(), elementB = new Element()) {
+        Element.prototype.nodesBetween = function (elementA, elementB) {
             let inBetweenNodes = [];
             for (let child of Array.from(this.children)) {//get all the children
                 //check if the two elements are children of this element
@@ -308,7 +308,7 @@ module.exports = class Template extends JSElements {
         }
 
         //Get if element is child of an element
-        Element.prototype.isAncestor = function (child = new Element()) {
+        Element.prototype.isAncestor = function (child) {
             let parents = child.parents();//Get all the parents of child
             return parents.includes(this);
         };
@@ -370,7 +370,7 @@ module.exports = class Template extends JSElements {
         };
 
         //add a state to an element
-        Element.prototype.addState = function (params = { name: '', state: new Element() }) {
+        Element.prototype.addState = function (params = { name: '' }) {
             //make sure the state has a domkey
             if (!self.isset(params.state.dataset.domKey)) {
                 params.state.setKey();
@@ -449,7 +449,7 @@ module.exports = class Template extends JSElements {
         };
 
         //drop down a child
-        Element.prototype.dropDown = function (element = new Element()) {
+        Element.prototype.dropDown = function (element) {
             let parentContent = this.cloneNode(true);
             this.innerHTML = '';
             this.append(parentContent);

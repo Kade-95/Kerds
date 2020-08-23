@@ -175,7 +175,7 @@ module.exports = class JSElements extends Period {
         return element;
     };
 
-    createElement(params = { element: '', attributes: {} }, parent = new Element()) {
+    createElement(params = { element: '', attributes: {} }, parent) {
         if (Array.isArray(params)) {
             let elements = [];
             for (let param of params) {

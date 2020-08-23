@@ -99,6 +99,8 @@ class Kerds extends Template {
             this.sessionsManager.getCookies(req);
             req.sessionId = this.sessionsManager.createNODESSID(res);
             req.res = res;
+            req.extract = this.request.extract;
+            req.parseForm = this.request.parseForm;
             req.handleRequests = this.handleRequests;
 
             req.on('data', this.onPosting).on('end', this.onPosted);
@@ -178,8 +180,8 @@ class Kerds extends Template {
 
     onPosted() {
         // post the request
-        var boundary = this.request.extract(this.headers['content-type'], ' boundary=');
-        var form = this.request.parseForm(boundary, this.data);
+        var boundary = this.extract(this.headers['content-type'], ' boundary=');
+        var form = this.parseForm(boundary, this.data);
 
         if (typeof this.handleRequests == 'function') {
             this.handleRequests(this, this.res, form);

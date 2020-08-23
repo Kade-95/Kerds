@@ -28,18 +28,16 @@ let arrayLibrary = require('./functions/Array');
 let objectLibrary = require('./functions/Objects');
 let mathLibrary = require('./functions/Math');
 let requestsLibrary = require('./functions/Requests');
-let analysisLibrary = require('./functions/Analytics');
-let Shadow = require('./functions/Shadow');
 
 class Kerds extends Template {
     constructor() {
         super();
         this.states = {};
+        this.sessionsManager = new SessionsManager();
         this.array = arrayLibrary();
         this.object = objectLibrary();
         this.math = mathLibrary();
         this.request = requestsLibrary();
-        this.anaylizer = analysisLibrary();
         this.allowSessions = false;
         this.mimeTypes = {
             '.html': 'text/html',
@@ -60,10 +58,13 @@ class Kerds extends Template {
             '.svg': 'application/image/svg+xml'
         };
         this.appPages = [];
-        this.handleRequests = () => { }
+        this.handleRequests = () => {
+
+        }
     }
 
-    permit(req, res, allowed = { origins: [] }) {
+    permit(req, res, allowed) {
+        allowed = allowed || {};
         if (this.isset(allowed.origins)) {
             for (let origin of allowed.origins) {
                 res.setHeader('Access-Control-Allow-Origin', origin);
@@ -71,7 +72,7 @@ class Kerds extends Template {
         }
     }
 
-    reply(req, res, allowed = { origin: [] }, callback = () => { }) {
+    reply(req, res, callback, allowed) {
         res.render = params => {
             var filename = `./pages/${params.page}.ejs`;
             ejs.renderFile(filename, params, (err, result) => {
@@ -86,7 +87,7 @@ class Kerds extends Template {
         let tmp = filename.lastIndexOf('.');
         let ext = filename.slice(tmp).toLowerCase();
         let contentType = this.mimeTypes[ext];
-
+        
         if (!this.isset(contentType)) {
             contentType = 'application/octet-stream';
         }
@@ -127,9 +128,8 @@ class Kerds extends Template {
         }
     }
 
-    createServer(params = { port: '', protocol: 'http', domains: [], httpsOptions: {}, response: () => { } }, callback = () => { }) {
+    createServer(params = { port: '', protocol: '', domains: [], httpsOptions: {}, response: () => { } }, callback = () => { }) {
         let server;
-        if(params.protocol == undefined) params.protocol = 'http';
         if (params.protocol.toLowerCase() == 'https') {
             if (!this.isset(params.httpsOptions)) {
                 console.log('HTTPS should have SSL options');
@@ -138,14 +138,14 @@ class Kerds extends Template {
 
             server = https.createServer(params.httpsOptions, (req, res) => {
                 if (this.isset(params.response)) {
-                    this.reply(req, res, params.domains, params.response);
+                    this.reply(req, res, params.response, params.domains);
                 }
             });
         }
         else {
             server = http.createServer((req, res) => {
                 if (this.isset(params.response)) {
-                    this.reply(req, res, params.domains, params.response);
+                    this.reply(req, res, params.response, params.domains);
                 }
             });
         }
@@ -156,11 +156,7 @@ class Kerds extends Template {
             console.log(`${params.protocol} Server Running on Port : ${params.port}`);
         });
 
-        console.log(typeof callback);
-        if(this.isfunction(callback)){
-            console.log("Hello");
-            callback(server);
-        }
+        callback(server);
     }
 
     onPosting(data) {
@@ -243,6 +239,11 @@ class Kerds extends Template {
 
         return commands;
     }
+
+    timeLog(...data){
+        let time = `[${this.time()}]:`;
+        console.log(time, ...data);
+    }
 }
 
 module.exports = {
@@ -252,8 +253,7 @@ module.exports = {
     Matrix,
     SessionsManager,
     Database,
-    Template,
-    Shadow
+    Template
 }
 
 exports.printMsg = function () {

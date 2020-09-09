@@ -1,6 +1,8 @@
 let Func = require('../classes/Func');
 let func = new Func();
 let arrayLib = require('./Array');
+const mongoClient = require('mongodb').MongoClient;
+
 // mongodb://localhost:<port>/
 // mongodb+srv://<username>:<password>@address/name?options
 
@@ -390,11 +392,12 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
                     })
                     .then((result) => {
                         resolve(result);
-                        database.close();
                     })
                     .catch((err) => {
-                        database.close();
                         reject(err);
+                    })
+                    .finally(()=>{
+                        database.close();
                     });
             }
             else {

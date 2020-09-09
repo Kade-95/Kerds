@@ -1,20 +1,9 @@
-global.Dom = require('jsdom').JSDOM;
-global.window = new Dom(`...`).window;
-global.document = window.document;
-global.Element = window.Element;
-global.NodeList = window.NodeList;
-global.HTMLCollection = window.HTMLCollection;
-global.Node = window.Node;
-global.HTMLElement = window.HTMLElement;
-global.location = window.location;
-
 global.os = require('os');
 global.cluster = require('cluster');
 global.https = require('https');
 global.http = require('http');
 global.fs = require('fs');
 global.url = require('url');
-global.mongoClient = require('mongodb').MongoClient;
 global.ObjectId = require('mongodb').ObjectId;
 global.util = require('util');
 
@@ -24,10 +13,12 @@ let NeuralNetwork = require('./classes/NeuralNetwork');
 let Template = require('./classes/Template');
 let SessionsManager = require('./classes/SessionsManager');
 let Database = require('./functions/Database');
+let Sql = require('./functions/Sql');
 let arrayLibrary = require('./functions/Array');
 let objectLibrary = require('./functions/Objects');
 let mathLibrary = require('./functions/Math');
 let requestsLibrary = require('./functions/Requests');
+let Spider = require('./functions/Spider');
 
 class Kerds extends Template {
     constructor() {
@@ -87,7 +78,7 @@ class Kerds extends Template {
         let tmp = filename.lastIndexOf('.');
         let ext = filename.slice(tmp).toLowerCase();
         let contentType = this.mimeTypes[ext];
-        
+
         if (!this.isset(contentType)) {
             contentType = 'application/octet-stream';
         }
@@ -242,7 +233,7 @@ class Kerds extends Template {
         return commands;
     }
 
-    timeLog(...data){
+    timeLog(...data) {
         let time = `[${this.time()}]:`;
         console.log(time, ...data);
     }
@@ -255,10 +246,14 @@ module.exports = {
     Matrix,
     SessionsManager,
     Database,
-    Template
+    Template,
+    Sql,
+    Spider
 }
 
 exports.printMsg = function () {
     console.log("This is a message from the demo package");
 }
+
+let k = new Kerds();
 

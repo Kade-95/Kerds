@@ -222,6 +222,15 @@ module.exports = class Func {
         return alphanumeric;
     }
 
+    generateRandomHex(length = 5) {
+        var string = this.capitals.slice(0, 3) + this.smalls.slice(0, 3) + this.digits;
+        var alphanumeric = '';
+        for (var i = 0; i < length; i++) {
+            alphanumeric += string[Math.floor(Math.random() * string.length)];
+        }
+        return alphanumeric;
+    }
+
     generateKey(length = 5) {
         let key = Date.now().toString(length) + Math.random().toString(length).slice(2);//generate the key
         return key;

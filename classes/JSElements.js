@@ -1,3 +1,13 @@
+global.Dom = require('jsdom').JSDOM;
+global.window = new Dom(`...`).window;
+global.document = window.document;
+global.Element = window.Element;
+global.NodeList = window.NodeList;
+global.HTMLCollection = window.HTMLCollection;
+global.Node = window.Node;
+global.HTMLElement = window.HTMLElement;
+global.location = window.location;
+
 let Period = require('./Period');
 
 module.exports = class JSElements extends Period {

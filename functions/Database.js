@@ -3,9 +3,6 @@ let func = new Func();
 let arrayLib = require('./Array');
 const mongoClient = require('mongodb').MongoClient;
 
-// mongodb://localhost:<port>/
-// mongodb+srv://<username>:<password>@address/name?options
-
 module.exports = function Database(details = { address: '', name: '', user: '', password: '', port: '', local: true }) {
     let self = {};
     self.mongoCloud = 'mongodb+srv://';
@@ -60,7 +57,12 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
                         callBack(db)
                             .then((result) => {
                                 self.close(db);
-                                resolve(result);
+                                if(func.isnull(db)){
+                                    reject(`Error => MongoDb is not running on this system. Database is null`);
+                                }
+                                else{
+                                    resolve(result);
+                                }
                             })
                             .catch(error => {
                                 reject(error);

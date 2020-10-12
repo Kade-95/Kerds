@@ -280,17 +280,7 @@ module.exports = class Func {
     }
 
     flip(haystack = '') {
-        var flipped = (Array.isArray(haystack)) ? [] : '';
-        for (var i = haystack.length - 1; i >= 0; i--) {
-            if (Array.isArray(haystack)) {
-                flipped.push(haystack[i])
-            }
-            else {
-                flipped += haystack[i];
-            }
-        }
-
-        return flipped;
+        return haystack.split('').reverse().join('');
     }
 
     isSmall(value = '') {
@@ -312,15 +302,6 @@ module.exports = class Func {
             }
         }
         return true;
-    }
-
-    isNumber(value = '') {
-        for (var x in value) {
-            if (!this.isDigit(value[x])) {
-                return false;
-            }
-        }
-        return value;
     }
 
     isPasswordValid(value = '') {
@@ -381,6 +362,34 @@ module.exports = class Func {
             }
         }
         return true;
+    }
+
+    isTruthy(value) {
+        let truthy;
+        if (typeof value == 'boolean') {
+            truthy = value;
+        }
+        else if (typeof value == 'string') {
+            truthy = (value.toLocaleLowerCase() == 'true' || value.toLocaleLowerCase() == '1');
+        }
+        else if (typeof value == 'number') {
+            truthy = (value == 1);
+        }
+        return truthy;
+    }
+
+    isFalsy(value) {
+        let falsy;
+        if (typeof value == 'boolean') {
+            falsy = value;
+        }
+        else if (typeof value == 'string') {
+            falsy = (value.toLocaleLowerCase() == 'false' || value.toLocaleLowerCase() == '0');
+        }
+        else if (typeof value == 'number') {
+            falsy = (value == 0);
+        }
+        return falsy;
     }
 
     objectLength(object = {}) {
@@ -489,16 +498,36 @@ module.exports = class Func {
         return (typeof variable !== 'undefined');
     }
 
-    isfunction(variable) {
-        return (typeof variable === 'function');
-    }
-
     isnull(variable) {
         return variable == null;
     }
 
     notNull(variable) {
         return this.isset(variable) && !this.isnull(variable);
+    }
+
+    isArray(variable) {
+        return variable.constructor === Array;
+    }
+
+    isObject(variable) {
+        return variable.constructor === Object;
+    }
+
+    isString(variable) {
+        return variable.constructor === String;
+    }
+
+    isNumber(variable) {
+        return variable.constructor === Number;
+    }
+
+    isBool(variable) {
+        return typeof variable === 'boolean';
+    }
+
+    isfunction(variable) {
+        return (typeof variable === 'function');
     }
 
     async runParallel(functions = [], callBack = () => { }) {

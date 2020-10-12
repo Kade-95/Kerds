@@ -13,7 +13,7 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
     self.name = details.name;
     self.options = details.options;
     self.port = details.port;
-    self.local = details.local || false;    
+    self.local = details.local || false;
 
     self.getConnectionString = function () {
         let connectionString;
@@ -22,7 +22,7 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
         }
         else {
             connectionString = `${self.mongoCloud}${self.user}:${self.password}@${self.address}/${self.name}`;
-            if (func.isset(self.options)) {
+            if (func.isString(self.options)) {
                 connectionString += `?${self.options}`;
             }
         }
@@ -47,7 +47,7 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
         // open database for operations
         params.url = params.url || self.connectionString;
         params.options = params.options || { useNewUrlParser: true, useUnifiedTopology: true }
-        if (func.isset(callBack)) {
+        if (func.isfunction(callBack)) {
             return new Promise((resolve, reject) => {
                 mongoClient.connect(params.url, params.options, (err, db) => {
                     if (err) {
@@ -57,10 +57,10 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
                         callBack(db)
                             .then((result) => {
                                 self.close(db);
-                                if(func.isnull(db)){
+                                if (func.isnull(db)) {
                                     reject(`Error => MongoDb is not running on this system. Database is null`);
                                 }
-                                else{
+                                else {
                                     resolve(result);
                                 }
                             })
@@ -93,11 +93,11 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
         let database = null;
         let value;
         return new Promise((resolve, reject) => {
-            if (!func.isset(params.collection)) {
-                reject('no_collection');
+            if (!func.isString(params.collection)) {
+                reject('Invalid collection name');
             }
-            if (!func.isset(params.query)) {
-                reject('no_query');
+            if (!func.isObject(params.query)) {
+                reject('Invalid query');
             }
             self.open()
                 .then((db) => {
@@ -110,7 +110,7 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
                     return value;
                 })
                 .then((result) => {
-                    if (func.isset(params.getInserted)) {
+                    if (params.getInserted == true) {
                         resolve(result.ops);
                     }
                     else resolve(result.result.ok);
@@ -127,17 +127,17 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
         // update database
         let database = null;
         return new Promise((resolve, reject) => {
-            if (!func.isset(params)) {
-                reject('no_parameter');
+            if (!func.isObject(params)) {
+                reject('Invalid parameter');
             }
-            if (!func.isset(params.collection)) {
-                reject('no_collection');
+            if (!func.isString(params.collection)) {
+                reject('Invalid collection name');
             }
-            if (!func.isset(params.query)) {
-                reject('no_query');
+            if (!func.isObject(params.query)) {
+                reject('Invalid query');
             }
-            if (!func.isset(params.options)) {
-                reject('no_options');
+            if (!func.isObject(params.options)) {
+                reject('Invalid options');
             }
 
             self.open()
@@ -146,7 +146,7 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
                     return db.db(self.name).collection(params.collection);
                 })
                 .then((collection) => {
-                    if (func.isset(params.many)) return collection.updateMany(params.query, params.options);
+                    if (params.many == true) return collection.updateMany(params.query, params.options);
                     else return collection.updateOne(params.query, params.options);
                 })
                 .then((result) => {
@@ -180,17 +180,17 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
         // insert or update the content of document
         let database = null;
         return new Promise((resolve, reject) => {
-            if (!func.isset(params)) {
-                reject('no_parameter');
+            if (!func.isObject(params)) {
+                reject('Invalid parameter');
             }
-            if (!func.isset(params.collection)) {
-                reject('no_collection');
+            if (!func.isString(params.collection)) {
+                reject('Invalid collection name');
             }
-            if (!func.isset(params.query)) {
-                reject('no_query');
+            if (!func.isObject(params.query)) {
+                reject('Invalid query');
             }
-            if (!func.isset(params.new)) {
-                reject('no_new');
+            if (!func.isObject(params.new)) {
+                reject('Invalid new value');
             }
             self.open().then((db) => {
                 database = db;
@@ -211,14 +211,14 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
         // perform an aggregation on database
         let database = null;
         return new Promise((resolve, reject) => {
-            if (!func.isset(params)) {
-                reject('no_parameter');
+            if (!func.isObject(params)) {
+                reject('Invalid parameter');
             }
-            if (!func.isset(params.collection)) {
-                reject('no_collection');
+            if (!func.isString(params.collection)) {
+                reject('Invalid collection name');
             }
-            if (!func.isset(params.query)) {
-                reject('no_query');
+            if (!func.isObject(params.query)) {
+                reject('Invalid query');
             }
             self.open().then((db) => {
                 database = db;
@@ -239,29 +239,29 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
         // join documents 
         let database = null;
         return new Promise((resolve, reject) => {
-            if (!func.isset(params)) {
-                reject('no_parameter');
+            if (!func.isObject(params)) {
+                reject('Invalid parameter');
             }
-            if (!func.isset(params.collection)) {
-                reject('no_collection');
+            if (!func.isString(params.collection)) {
+                reject('Invalid collection name');
             }
-            if (!func.isset(params.query)) {
-                reject('no_collection');
+            if (!func.isObject(params.query)) {
+                reject('Invalid collection name');
             }
-            if (!func.isset(params.query.lookup)) {
-                reject('no_lookup');
+            if (!func.isObject(params.query.lookup)) {
+                reject('Invalid lookup');
             }
-            if (!func.isset(params.query.lookup.from)) {
-                reject('no_from');
+            if (!func.isString(params.query.lookup.from)) {
+                reject('Invalid lookup source');
             }
-            if (!func.isset(params.query.lookup.localField)) {
-                reject('no_localField');
+            if (!func.isString(params.query.lookup.localField)) {
+                reject('Invalid lookup localfield');
             }
-            if (!func.isset(params.query.lookup.foreignField)) {
-                reject('no_foreignField');
+            if (!func.isString(params.query.lookup.foreignField)) {
+                reject('Invalid lookup foreignfield');
             }
-            if (!func.isset(params.query.lookup.as)) {
-                reject('no_as');
+            if (!func.isString(params.query.lookup.as)) {
+                reject('Invalid lookup as');
             }
 
             self.open()
@@ -358,11 +358,11 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
         let database = null;
         let value;
         return new Promise((resolve, reject) => {
-            if (!func.isset(params.collection)) {
-                reject('no_collection');
+            if (!func.isString(params.collection)) {
+                reject('Invalid collection name');
             }
-            if (!func.isset(params.query)) {
-                reject('no_query');
+            if (!func.isObject(params.query)) {
+                reject('Invalid query');
             }
             params.projection = params.projection || {};
             params.options = params.options || {};
@@ -398,7 +398,7 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
                     .catch((err) => {
                         reject(err);
                     })
-                    .finally(()=>{
+                    .finally(() => {
                         database.close();
                     });
             }
@@ -418,7 +418,7 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
                             return found;
                         }
                         else {
-                            if (func.isset(params.query)) {
+                            if (func.isObject(params.query)) {
                                 if (func.isset(params.many) && params.many == true) {
                                     found = func.array.findAll(found.contents, item => {
                                         let flag = true;
@@ -441,7 +441,7 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
                                 }
                             }
 
-                            if (func.isset(params.projection)) {
+                            if (func.isObject(params.projection)) {
                                 if (Array.isArray(found)) {
                                     for (let item of found) {
                                         for (let p in item) {
@@ -489,11 +489,11 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
         let database = null;
 
         return new Promise((resolve, reject) => {
-            if (!func.isset(params.collection)) {
-                reject('no_collection');
+            if (!func.isString(params.collection)) {
+                reject('Invalid collection name');
             }
-            if (!func.isset(params.query)) {
-                reject('no_query');
+            if (!func.isObject(params.query)) {
+                reject('Invalid query');
             }
 
             self.open()
@@ -502,7 +502,7 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
                     return db.db(self.name).collection(params.collection);
                 })
                 .then((collection) => {
-                    if (func.isset(params.many)) return collection.deleteMany(params.query);
+                    if (params.many == true) return collection.deleteMany(params.query);
                     else return collection.deleteOne(params.query);
                 })
                 .then((result) => {
@@ -516,7 +516,7 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
         });
     }
 
-    self.recycle = function(params = { collection: '', query: {}, many: false }) {
+    self.recycle = function (params = { collection: '', query: {}, many: false }) {
         //get the data to delete and insert it into recycle bin before deleting it
         return new Promise((resolve, reject) => {
             self.find(params).then(result => {
@@ -536,7 +536,7 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
         });
     }
 
-    self.restore = function(params = { id: '' }) {
+    self.restore = function (params = { id: '' }) {
         //get the data from recycle bin restore it to collection then clear it from recycle bin
         return new Promise((resolve, reject) => {
             self.find({ collection: 'recycle', query: { _id: new ObjectId(params.id) }, projection: { _id: 0 } }).then(result => {
@@ -555,7 +555,7 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
         });
     }
 
-    self.dropCollection = function(collection) {
+    self.dropCollection = function (collection) {
         // delete database
         return self.open({}, db => {
             return db.db(self.name).dropCollection(collection)
@@ -568,14 +568,14 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
         });
     }
 
-    self.createCollection = function(collection) {
+    self.createCollection = function (collection) {
         // create database
         self.open({}, db => {
             return db.db(self.name).createCollection(collection);
         });
     }
 
-    self.getCollections = function() {
+    self.getCollections = function () {
         return new Promise((resolve, reject) => {
             self.open()
                 .then(db => {
@@ -587,21 +587,21 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
         });
     }
 
-    self.modify = function(params = { collection: '', query: {}, update: {} }) {
+    self.modify = function (params = { collection: '', query: {}, update: {} }) {
         // update database
         let database = null;
         return new Promise((resolve, reject) => {
-            if (!func.isset(params)) {
-                reject('no_parameter');
+            if (!func.isObject(params)) {
+                reject('Invalid parameter');
             }
-            if (!func.isset(params.collection)) {
-                reject('no_collection');
+            if (!func.isString(params.collection)) {
+                reject('Invalid collection name');
             }
-            if (!func.isset(params.query)) {
-                reject('no_query');
+            if (!func.isObject(params.query)) {
+                reject('Invalid query');
             }
-            if (!func.isset(params.update)) {
-                reject('no_update');
+            if (!func.isObject(params.update)) {
+                reject('Invalid update');
             }
 
             let projection = { _id: 0 }, update = {};
@@ -645,7 +645,7 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
         });
     }
 
-    self.work = function(params = { collection: '' }) {
+    self.work = function (params = { collection: '' }) {
         return new Promise((resulve, reject) => {
             self.open().then(db => {
                 return db.db(self.name).collection(params.collection);
@@ -655,7 +655,7 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
         });
     }
 
-    self.say = function() {
+    self.say = function () {
         console.log(self.name);
     }
 

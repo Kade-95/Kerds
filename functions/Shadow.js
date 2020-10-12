@@ -47,22 +47,22 @@ module.exports = function Shadow(element) {
     }
 
     self.prepareElement = function (element, params = { childDetails: { attributes: {}, properties: {} }, details: { attributes: {}, properties: {} } }) {
-        if (func.isset(params.childDetails)) {
-            if (func.isset(params.childDetails.attributes)) {
+        if (params.childDetails != undefined) {
+            if (params.childDetails.attributes != undefined) {
                 this.updateNewElementChildAttributes(element, params.childDetails.attributes);
             }
 
-            if (func.isset(params.childDetails.properties)) {
+            if (params.childDetails.properties != undefined) {
                 this.updateNewElementChildProperties(element, params.childDetails.properties);
             }
         }
 
-        if (func.isset(params.details)) {
-            if (func.isset(params.details.attributes)) {
+        if (params.details != undefined) {
+            if (params.details.attributes != undefined) {
                 element.setAttributes(params.details.attributes);
             }
 
-            if (func.isset(params.details.properties)) {
+            if (params.details.properties != undefined) {
                 element.setProperties(params.details.properties);
             }
         }
@@ -150,7 +150,7 @@ module.exports = function Shadow(element) {
         let children = element.findAll(identifier);//get the children matching identifier in each element
         if (children.length > 0) {//if not empty
             for (let j = 0; j < positions.length; j++) {
-                if (func.isset(children[positions[j]])) {//if available
+                if (children[positions[j]] != undefined) {//if available
                     collection.push(children[positions[j]]);
                 }
             }

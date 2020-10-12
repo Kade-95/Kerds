@@ -1,11 +1,8 @@
-
 let ArrayLibrary = require('./Array');
-let Func = require('./../classes/Func');
-let func = new Func();
+let arrayLibrary = ArrayLibrary();
 
 module.exports = function MathsLibrary() {
     let self = {};
-    self.array = ArrayLibrary();
 
     self.placeUnit = (num, value, count) => {
         num = Math.floor(num).toString();
@@ -95,7 +92,6 @@ module.exports = function MathsLibrary() {
 
         return mode;
     }
-
 
     self.normalizeData = (data) => {
         data.sort((a, b) => { return a - b });
@@ -190,69 +186,13 @@ module.exports = function MathsLibrary() {
         return number;
     }
 
-    self.changeBase = (params) => {
-        var list = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-        if (params.number == undefined) return 'no_number';
-        if (params.from == undefined && params.to == undefined) return { '10': params.number };
-        if ((params.from || params.to) == 1) return 'base1 invalid';
-
-
-        if (params.from == undefined) params.from = 10;
-        if (params.to == undefined) params.to = 10;
-
-        var symbol;
-        var base10 = '';
-        var baseTo = '';
-        var baseToInteger = '';
-        var baseToFraction = '';
-        var integer = self.stripInteger(params.number)
-        var integerValue = integer;
-
-        var fraction = self.stripFraction(params.number);
-        var fractionValue = fraction;
-        for (var n of params.number) {
-            symbol = list.indexOf(n);
-            if (symbol >= params.from && n != '.') return 'invalid';
-        }
-
-        if (params.from != 10) {
-            //convert to base10
-            integerValue = 0;
-            fractionValue = 0;
-            for (var n in integer) {
-                symbol = list.indexOf(integer[n]);
-                integerValue = (symbol / 1 + integerValue);
-                if (n != integer.length - 1) integerValue *= params.from;
-            }
-
-            for (var n in fraction) {
-                symbol = list.indexOf(fraction[n]);
-                fractionValue = (symbol / 1 + fractionValue);
-                if (n != fraction.length - 1) fractionValue *= params.from;
-            }
-        }
-
-        base10 = integerValue + fractionValue / (params.from ** fraction.length);
-
-        if (params.to == 10) return base10;
-        while (integerValue / 1) {
-            baseToInteger += list[integerValue % params.to];
-            integerValue = self.stripInteger(integerValue / params.to);
-        }
-        var i = 4;
-        while (i) {
-            fractionValue = ('.' + fractionValue) * params.to;
-            baseToFraction += list[self.stripInteger(fractionValue)];
-            fractionValue = self.stripFraction(fractionValue);
-            i--;
-        }
-        baseTo = func.flip(baseToInteger) + '.' + baseToFraction;
-        return baseTo;
+    self.changeBase = (number, from, to) => {
+        return parseFloat(number, from).toString(to);
     }
 
     self.max = (array) => {
         var max = array[0];
-        self.array.each(array, value => {
+        arrayLibrary.each(array, value => {
             if (max < value) max = value;
         });
         return max;
@@ -260,7 +200,7 @@ module.exports = function MathsLibrary() {
 
     self.min = (array) => {
         var max = array[0];
-        self.array.each(array, value => {
+        arrayLibrary.each(array, value => {
             if (max > value) max = value;
         });
         return max;
@@ -351,7 +291,7 @@ module.exports = function MathsLibrary() {
     }
 
     self.abs = (array) => {
-        return self.array.each(array, value => {
+        return arrayLibrary.each(array, value => {
             value = isNaN(value) == true ? 0 : value;
             return Math.abs(value);
         });

@@ -1,7 +1,7 @@
 module.exports = function ArrayLibrary() {
     let self = {};
 
-    self.combine = (haystack, first, second, pos) => {
+    self.combine = (haystack, first, second, pos) => {//used to get what is between two items at a particular occurrance in an Array and the items combined
         pos = pos || 0;//initialize position if not set
         let at1 = pos,
             at2 = first === second ? pos + 1 : pos; //check if it is the same and change position
@@ -15,7 +15,7 @@ module.exports = function ArrayLibrary() {
         return haystack.slice(start, end);
     }
 
-    self.inBetween = (haystack, first, second, pos) => {
+    self.inBetween = (haystack, first, second, pos) => {//used to get what is between two items at a particular occurrance in an Array
         pos = pos || 0;//initialize position if not set
         let at1 = pos,
             at2 = first === second ? pos + 1 : pos; //check if it is the same and change position
@@ -29,18 +29,17 @@ module.exports = function ArrayLibrary() {
         return haystack.slice(start, end);
     }
 
-    self.contains = (haystack, needle) => {
+    self.contains = (haystack, needle) => {//used to check if an Array has an item
         let flag = false;//set flag to false
-        for (let i = 0; i < haystack.length; i++) {
-            if (haystack[i] == needle) {//if found flag is true and breakout
-                flag = true;
-                break;
+        for (let i in haystack) {
+            if (haystack[i] == needle) {//if found breakout
+                return true;
             }
         }
         return flag;
     }
 
-    self.indexAt = (haystack, needle, pos) => {
+    self.indexAt = (haystack, needle, pos) => {//used to get the index of an item at a particular occurrance
         pos = pos || 0;
         let count = -1;
         for (let i = 0; i < haystack.length; i++) {
@@ -56,7 +55,7 @@ module.exports = function ArrayLibrary() {
         return -1;
     }
 
-    self.find = (haystack, callback) => {
+    self.find = (haystack, callback) => {//used as a higher order function to get an items that match the conditions
         for (let i in haystack) {
             if (callback(haystack[i]) == true) {
                 return haystack[i];
@@ -64,7 +63,7 @@ module.exports = function ArrayLibrary() {
         }
     }
 
-    self.findAll = (haystack, callback) => {
+    self.findAll = (haystack, callback) => {//used as a higher order function to get all the items that match the conditions
         let values = [];
         for (let i in haystack) {
             if (callback(haystack[i]) == true) {
@@ -75,122 +74,163 @@ module.exports = function ArrayLibrary() {
         return values;
     }
 
-    self.getObject = (haystack, key, value) => {
-        let found;
-        for (let object of haystack) {
-            if (object[key] == value) found = object;
+    self.getObject = (haystack, key, value) => {//used to get an Object with an Item in a JsonArray
+        let object;
+        for (let i in haystack) {
+            if (haystack[i][key] == value) object = haystack[i];
         }
-        return found;
+        return object;
     }
 
-    self.getAll = (haystack, needle) => {
-        let found = [];
-        for (let key = 0; key < haystack.length; key++) {
-            if (haystack[key] == needle) found.push(key);
-        }
-        return found;
-    }
-
-    self.removeAll = (haystack, needle) => {
-        var isArray = Array.isArray(haystack);
-        var value = (isArray) ? [] : '';
-        for (var i of haystack) {
-            if (i == needle) continue;
-            (isArray) ? value.push(i) : value += i;
-        }
-        return value;
-    }
-
-    self.pushArray = (haystack, needle, insert) => {
-        var position = self.arrayIndex(haystack, needle);
-        var tmp = [];
-        for (var i = 0; i < haystack.length; i++) {
-            tmp.push(haystack[i]);
-            if (i == position) {
-                tmp.push(insert);
+    self.getAllObjects = (haystack, key, value) => {//used to get all occurrances of an Object with an Item in a JsonArray
+        let newArray = [];
+        for (let i in haystack) {
+            if (haystack[i][key] == value) {
+                newArray.push(haystack[i]);
             }
         }
-        return tmp;
+        return newArray;
     }
 
-    self.arrayIndex = (haystack, needle) => {
-        for (var x in haystack) {
-            if (JSON.stringify(haystack[x]) == JSON.stringify(needle)) {
-                return x;
+    self.getAll = (haystack, needle) => {//used to all occurrances of an item in an Array
+        let newArray = [];
+        for (let i in haystack) {
+            if (haystack[i] == needle) newArray.push(i);
+        }
+        return newArray;
+    }
+
+    self.removeAll = (haystack, needle) => {//used to remove instances of an item
+        let newArray = [];
+        for (let i of haystack) {
+            if (i != needle) {
+                newArray.push(i);
             }
         }
-        return false;
+        return newArray;
     }
 
-    self.hasArray = (haystack, needle) => {
+    self.putAt = (haystack = [], value, key = 0) => {//used to push an item into an index in Array
+        let newArray = [];//storage
+        for (let i in haystack) {
+            if (i == key) {//matched
+                newArray[i] = value;//push in the value
+                let next = Math.floor(key);//check if it's a number
+
+                if (isNaN(next)) {
+                    next = key + 1;
+                }
+                else {
+                    next++;
+                }
+                newArray[next] = haystack[i];//add the previous value
+            }
+            else {
+                newArray[i] = haystack[i];
+            }
+        }
+
+        return newArray;
+    }
+
+    self.pushArray = (haystack = [], needle, insert) => {//used to push in an item before another existing item in an Array
+        let position = self.arrayIndex(haystack, needle);//get the existing item position
+        let newArray = self.putAt(haystack, insert, position);//push in new item
+        return newArray;
+    }
+
+    self.arrayIndex = (haystack = [], needle = []) => {//used to get position of an item in an Array
+        for (let i in haystack) {
+            if (JSON.stringify(haystack[i]) == JSON.stringify(needle)) {
+                return i;
+            }
+        }
+        return -1;
+    }
+
+    self.hasArray = (haystack = [], needle = []) => {//used to check if an Array is a sub-Array to another Array
         haystack = JSON.stringify(haystack);
         needle = JSON.stringify(needle);
 
-        return (haystack.indexOf(needle) >= 0) ? true : false;
+        return haystack.indexOf(needle) != -1;
     }
 
-    self.toObject = (arr, key) => {
-        let obj = {};
-        for (let a of arr) {
-            obj[a[key]] = a;
-            delete obj[a[key]][key];
+    self.toObject = (array = [], key) => {//used to turn an JsonArray to an Object literal
+        let object = {};//storage
+        for (let i in array) {
+            object[array[i][key]] = array[i];//store the intended [key, value]
+            delete object[array[i][key]][key];//remove the key in the value
         }
-        return obj;
+        return object;
     }
 
-    self.reshape = (params) => {
+    self.reshape = (params) => {//used to change the shape of an Array
         // Pending
     }
 
-    self.randomPick = (array) => {
+    self.randomPick = (array) => {//used to pick a random item from an Array
         return array[Math.floor(Math.random() * array.length)];
     };
 
-    self.removeEmpty = (array) => {
-        var newArray = [];
-        array.forEach(value => {
-            if (Array.isArray(value) && value.length > 0) {
-                return self.removeEmpty(value);
+    self.removeEmpty = (array = []) => {//used to truncate an Array
+        let newArray = [];//storage
+        for (let i in array) {
+            if (Array.isArray(array[i]) && array[i].length > 0) {//if array go deep
+                newArray.push(self.removeEmpty(array[i]));
             }
-            else {
-                if (value != undefined && value != null && value != 0 && value != '') newArray.push(value);
+            else if (array[i] != undefined && array[i] != null && array[i] != 0 && array[i] != '') {//skip [undefined, null, 0, '']
+                newArray.push(array[i]);
             }
-        });
-        return newArray;
-    }
-
-    self.each = (array, callback) => {
-        let newArray = [];
-        for (let i = 0; i < array.length; i++) {
-            newArray.push(callback(array[i], i));
         }
         return newArray;
     }
 
-    self.hasArrayElement = (haystack, needle) => {
-        for (var i of needle) {
-            if (haystack.indexOf(i) != -1) return true;
+    self.each = (array = [], callback = () => { }) => {//used as a higher order Array function
+        let newArray = [];//storage
+        for (let i in array) {
+            newArray.push(callback(array[i], i));//make changes to the item and store it.
         }
-        return false;
+        return newArray;
     }
 
-    self.toSet = (haystack) => {
-        var single = [];
-        for (var x in haystack) {
-            if (!self.contains(single, haystack[x])) {
-                single.push(haystack[x]);
+    self.hasArrayElement = (haystack = [], needle = []) => {//used to check if two arrays has an item in common
+        let flag = false;
+        for (let i in needle) {
+            if (haystack.indexOf(needle[i]) != -1) {
+                return true;
+            }
+        }
+        return flag;
+    }
+
+    self.toSet = (haystack = []) => {//used to turn an Array into a set(Make sure there a no duplicates)
+        let single = [];//storage
+        for (let i in haystack) {//skip if already stored
+            if (single.indexOf(haystack[i]) == -1) {
+                single.push(haystack[i]);
             }
         }
         return single;
     }
 
-    self.popIndex = (array, index) => {
-        let newArray = [];
-        for (let i = 0; i < array.length; i++) {
-            if (i == index) continue;
-            newArray.push(array[i]);
+    self.popIndex = (array = [], index) => {//used to remove an item at a position in an Array
+        let newArray = [];//storage Array
+        for (let i in array) {
+            if (i != index) {//skip the position
+                newArray.push(array[i]);
+            }
         }
         return newArray;
+    }
+
+    self.dataType = (array = []) => {//used to get the datatypes inside an Array
+        let type = typeof array[0];//get the indext type
+        for (let i in array) {
+            if (typeof array[i] != type) {//if two types do not match return mixed
+                return 'mixed';
+            }
+        }
+        return type;
     }
 
     return self;

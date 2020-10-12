@@ -7,7 +7,7 @@ let mathLibrary = MathsLibrary();
 let ObjectLibrary = require('./Objects');
 let objectLibrary = ObjectLibrary();
 
-let Tree = require('../classes/Tree');
+let Tree = require('../classes/Tree.mjs');
 
 module.exports = function Compression() {
     const self = {};

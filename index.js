@@ -17,8 +17,6 @@ let arrayLibrary = require('./functions/Array');
 let objectLibrary = require('./functions/Objects');
 let mathLibrary = require('./functions/Math');
 let requestsLibrary = require('./functions/Requests');
-let Compression = require('./functions/Compression');
-
 
 class Kerds extends Template {
     constructor() {
@@ -247,7 +245,6 @@ module.exports = {
     SessionsManager,
     Database,
     Template,
-    Compression
 }
 
 exports.printMsg = function () {

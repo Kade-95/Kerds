@@ -19,6 +19,8 @@ let objectLibrary = require('./functions/Objects');
 let mathLibrary = require('./functions/Math');
 let requestsLibrary = require('./functions/Requests');
 let Spider = require('./functions/Spider');
+let Compression = require('./functions/Compression');
+
 
 class Kerds extends Template {
     constructor() {
@@ -248,7 +250,8 @@ module.exports = {
     Database,
     Template,
     Sql,
-    Spider
+    Spider,
+    Compression
 }
 
 exports.printMsg = function () {

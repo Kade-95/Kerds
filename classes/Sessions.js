@@ -1,4 +1,4 @@
-module.exports = class Sessions {
+class Sessions {
     constructor(key, params) {
         this.key = key;
         this.time;
@@ -15,3 +15,5 @@ module.exports = class Sessions {
         for (var i of item) delete this[i];
     }
 }
+
+export { Sessions };

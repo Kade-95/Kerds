@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 global.os = require('os');
 global.cluster = require('cluster');
 global.https = require('https');
@@ -20,14 +21,46 @@ let requestsLibrary = require('./functions/Requests');
 let Compression = require('./functions/Compression');
 
 class Kerds extends Template {
+=======
+import { default as os } from 'os';
+import { default as https } from 'https';
+import { default as http } from 'http';
+import { default as fs } from 'fs';
+import { default as url } from 'url';
+import { default as mongodb } from 'mongodb';
+import { default as util } from 'util';
+import { default as DOM } from 'jsdom';
+
+global.Dom = DOM.JSDOM;
+global.window = new Dom(`...`).window;
+global.document = window.document;
+global.Element = window.Element;
+global.NodeList = window.NodeList;
+global.HTMLCollection = window.HTMLCollection;
+global.Node = window.Node;
+global.HTMLElement = window.HTMLElement;
+global.location = window.location;
+
+
+import {
+    Base,
+    Func,
+    NeuralNetwork,
+    Matrix,
+    Template,
+} from 'Base';
+
+import { SessionsManager } from './classes/SessionsManager.js';
+import { Database } from './functions/Database.js';
+import { RequestsLibrary } from './functions/Requests.js';
+
+class Kerds extends Base {
+>>>>>>> working
     constructor() {
         super();
         this.states = {};
         this.sessionsManager = new SessionsManager();
-        this.array = arrayLibrary();
-        this.object = objectLibrary();
-        this.math = mathLibrary();
-        this.request = requestsLibrary();
+        this.request = RequestsLibrary();
         this.allowSessions = false;
         this.mimeTypes = {
             '.html': 'text/html',
@@ -48,9 +81,7 @@ class Kerds extends Template {
             '.svg': 'application/image/svg+xml'
         };
         this.appPages = [];
-        this.handleRequests = () => {
-
-        }
+        this.handleRequests = () => { };
     }
 
     permit(req, res, allowed) {
@@ -63,13 +94,6 @@ class Kerds extends Template {
     }
 
     reply(req, res, callback, allowed) {
-        res.render = params => {
-            var filename = `./pages/${params.page}.ejs`;
-            ejs.renderFile(filename, params, (err, result) => {
-                if (err) throw (err);
-                callback({ request: req, response: res, filename: filename });
-            });
-        }
         // start http server
         this.q = url.parse(req.url);
 
@@ -84,7 +108,7 @@ class Kerds extends Template {
 
         this.permit(req, res, allowed);
 
-        if (req.method == 'POST') {
+        if (req.method.toLowerCase() == 'post') {
             // on post request
             this.sessionsManager.getCookies(req);
             req.sessionId = this.sessionsManager.createNODESSID(res);
@@ -95,28 +119,40 @@ class Kerds extends Template {
 
             req.on('data', this.onPosting).on('end', this.onPosted);
         }
-        else if (filename == './' || this.appPages.includes(filename.replace('./', ''))) {
-            // if page is index
+        else if (req.method.toLowerCase() == 'get') {
             this.sessionsManager.getCookies(req);
-            let sessionId = this.sessionsManager.createNODESSID(res, true);
-            if (this.allowSessions) {
-                this.sessionsManager.store(req, res, filename, callback, sessionId);
-            }
-            else {
-                callback({ request: req, response: res, filename: filename, sessionId: sessionId });
-            }
-        }
-        else {
-            fs.exists(filename, (exists) => {
-                if (exists) {
-                    res.writeHead(200, { 'Content-Type': contentType });
-                    fs.createReadStream(filename).pipe(res);
+            req.sessionId = this.sessionsManager.createNODESSID(res, true);
+
+            if (this.static == true) {
+                this.sessionsManager.store(req, res);
+                filename = filename.replace('./', './public/');
+                console.log(filename);
+
+                if (filename == './public/') {
+                    res.writeHead(301, { 'Location': 'index.html' });
+                    res.end();
                 }
                 else {
-                    res.writeHead(404, { 'Content-Type': contentType });
-                    res.end('Not Found');
+                    fs.stat(filename, (err, stats) => {
+                        if (stats == undefined || !stats.isFile()) {
+                            res.writeHead(404, { 'Content-Type': contentType });
+                            res.end('404. Not Found');
+                        }
+                        else {
+                            res.writeHead(200, { 'Content-Type': contentType });
+                            fs.createReadStream(filename).pipe(res);
+                        }
+                    });
                 }
-            });
+            }
+            else {
+                if (this.allowSessions) {
+                    this.sessionsManager.store(req, res, filename, callback);
+                }
+                else {
+                    callback({ request: req, response: res, filename: filename, sessionId: undefined });
+                }
+            }
         }
     }
 
@@ -236,9 +272,14 @@ class Kerds extends Template {
         let time = `[${this.time()}]:`;
         console.log(time, ...data);
     }
+
+    makeStatic(name) {
+        this.static = true;
+        this.staticPath = name;
+    }
 }
 
-module.exports = {
+export {
     Kerds,
     Func,
     NeuralNetwork,
@@ -246,8 +287,4 @@ module.exports = {
     SessionsManager,
     Database,
     Template,
-}
-
-exports.printMsg = function () {
-    console.log("This is a message from the demo package");
 }

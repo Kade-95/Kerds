@@ -1,4 +1,4 @@
-module.exports = function RequestsLibrary() {
+function RequestsLibrary() {
     let self = {};
 
     self.extract = (arr = '', start, end) => {
@@ -78,3 +78,5 @@ module.exports = function RequestsLibrary() {
 
     return self;
 }
+
+export { RequestsLibrary };

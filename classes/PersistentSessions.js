@@ -1,9 +1,11 @@
-let Func = require('./Func');
-let Database = require('./../functions/Database');
+import {
+    Func,
+} from 'Base';
+import { Database } from '../functions/Database.js';
 let func = new Func();
 let db;
 
-module.exports = class PersistentSessions {
+class PersistentSessions {
 
     constructor(server = {}) {
         db = Database(server);
@@ -70,7 +72,7 @@ module.exports = class PersistentSessions {
                                     });
                                 }
                                 else {
-                                    this.logout({res, cookies}).then(loggedOut => {
+                                    this.logout({ res, cookies }).then(loggedOut => {
                                         console.log('PSID_with_used_cookie');
                                         resolve('PSID_with_used_cookie');
                                     }).catch(err => {
@@ -80,7 +82,7 @@ module.exports = class PersistentSessions {
                                 }
                             }
                             else {
-                                this.logout({res, cookies}).then(loggedOut => {
+                                this.logout({ res, cookies }).then(loggedOut => {
                                     resolve('PSID_with_unexisting_cookie')
                                     console.log('PSID_with_unexisting_cookie')
                                 }).catch(err => {
@@ -98,7 +100,7 @@ module.exports = class PersistentSessions {
                     });
                 }
                 else {
-                    this.logout({res, cookies}).then(loggedOut => {
+                    this.logout({ res, cookies }).then(loggedOut => {
                         console.log('PSID_with_used_cookie');
                         resolve('PSID_with_used_cookie');
                     }).catch(err => {
@@ -204,3 +206,5 @@ module.exports = class PersistentSessions {
         });
     }
 }
+
+export { PersistentSessions };

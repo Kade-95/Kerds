@@ -1,41 +1,41 @@
-let Func = require('./Func');
-let Database = require('./../functions/Database');
-let Session = require('./Session');
-let Persistence = require('./PersistentSessions');
-let objectLib = require('./../functions/Objects');
+import {
+    Func, ObjectLibrary,
+} from 'Base';
+
+import { Database } from '../functions/Database.js';
+import { Sessions } from '../classes/Sessions.js';
+import { PersistentSessions } from '../classes/PersistentSessions.js';
+
+let objectLib = ObjectLibrary();
 let db;
 let func = new Func();
 let persistence;
 
-
-
-module.exports = class SessionsManager {
+class SessionsManager {
     constructor() {
         this.actualSessions = {};
-        this.sessions = objectLib().onChanged(this.actualSessions, (target, p, d) => {
+        this.sessions = objectLib.onChanged(this.actualSessions, (target, p, d) => {
             this.write(target.key)
                 .then()
                 .catch(console.log);
         });
         this.cookies = {};
-        this.sessionID;
-        this.currentSession;
     }
 
     startSessions(params) {
         db = Database(params.server);
-        persistence = new Persistence(params.server);
+        persistence = new PersistentSessions(params.server);
         this.remember = params.remember || {};
-        
+
         this.period = params.period;
-        if(func.isset(this.period)){
+        if (func.isset(this.period)) {
             this.period = 60000000;
         }
 
         return new Promise((resolve, reject) => {
             db.find({ collection: 'sessions', query: {}, options: { projection: { _id: 0 } }, many: {} }).then(result => {//Get all the stored sessions
                 for (var session of result) {
-                    this.actualSessions[session.key] = new Session(session.key);
+                    this.actualSessions[session.key] = new Sessions(session.key);
                     Object.keys(session).map(key => {
                         this.actualSessions[session.key][key] = session[key];
                     });
@@ -74,7 +74,7 @@ module.exports = class SessionsManager {
         else {
             sessionId = this.cookies.NODESSID;
         }
-        if (!func.isset(this.actualSessions[sessionId])) this.actualSessions[sessionId] = new Session(sessionId);
+        if (!func.isset(this.actualSessions[sessionId])) this.actualSessions[sessionId] = new Sessions(sessionId);
         return sessionId;
     }
 
@@ -106,12 +106,13 @@ module.exports = class SessionsManager {
         res.setHeader('Set-Cookie', [arrangedCookie]);
     }
 
-    store(req, res, filename, callback, sessionId) {
+    store(req, res, filename, callback) {
         let time = new Date().getTime();
         let duration = time - this.period;
+        let sessionId = req.sessionId;
 
         this.read(sessionId).then(result => {//Fetch session from database    
-            if (!func.isnull(result)) {//Session is found in database
+            if (!func.isnull(result)) {//Sessions is found in database
                 Object.keys(result).map(key => {
                     this.sessions[sessionId][key] = result[key];
                 });
@@ -124,7 +125,7 @@ module.exports = class SessionsManager {
                 // session exists already
                 // and but expired
                 this.sessions[sessionId].active = false;
-                callback({ request: req, response: res, filename: filename, sessionId: sessionId });
+                if (typeof callback === 'function') callback({ request: req, response: res, filename: filename, sessionId: sessionId });
             }
             else if (func.isnull(result)) {
                 // session doesn't exist
@@ -132,18 +133,14 @@ module.exports = class SessionsManager {
 
                 //Check if previous login was persistent
                 persistence.checkCredentials(res, this.cookies).then(result => {
-                    callback({ request: req, response: res, filename: filename, sessionId: sessionId });
+                    if (typeof callback === 'function') callback({ request: req, response: res, filename: filename, sessionId: sessionId });
                 });
             }
             else {
                 // session exists and has not expired
-                callback({ request: req, response: res, filename: filename, sessionId: sessionId });
+                if (typeof callback === 'function') callback({ request: req, response: res, filename: filename, sessionId: sessionId });
             }
         });
-    }
-
-    record() {
-        this.write(this.sessionID);
     }
 
     async read(key) {
@@ -212,3 +209,5 @@ module.exports = class SessionsManager {
         this.write(key);
     }
 }
+
+export { SessionsManager };

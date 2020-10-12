@@ -1,9 +1,14 @@
-let Func = require('../classes/Func');
-let func = new Func();
-let arrayLib = require('./Array');
-const mongoClient = require('mongodb').MongoClient;
+import {
+    ArrayLibrary,
+    Func,
+} from 'Base';
+import { default as mongodb } from 'mongodb';
+const mongoClient = mongodb.MongoClient;
 
-module.exports = function Database(details = { address: '', name: '', user: '', password: '', port: '', local: true }) {
+let func = new Func();
+let arrayLib = ArrayLibrary();
+
+function Database(details = { address: '', name: '', user: '', password: '', port: '', local: true }) {
     let self = {};
     self.mongoCloud = 'mongodb+srv://';
     self.mongoLocal = 'mongodb://';
@@ -662,3 +667,4 @@ module.exports = function Database(details = { address: '', name: '', user: '', 
     return self;
 }
 
+export { Database };

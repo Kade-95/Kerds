@@ -1,27 +1,3 @@
-<<<<<<< HEAD
-global.os = require('os');
-global.cluster = require('cluster');
-global.https = require('https');
-global.http = require('http');
-global.fs = require('fs');
-global.url = require('url');
-global.ObjectId = require('mongodb').ObjectId;
-global.util = require('util');
-
-let Func = require('./classes/Func');
-let Matrix = require('./classes/Matrix');
-let NeuralNetwork = require('./classes/NeuralNetwork');
-let Template = require('./classes/Template');
-let SessionsManager = require('./classes/SessionsManager');
-let Database = require('./functions/Database');
-let arrayLibrary = require('./functions/Array');
-let objectLibrary = require('./functions/Objects');
-let mathLibrary = require('./functions/Math');
-let requestsLibrary = require('./functions/Requests');
-let Compression = require('./functions/Compression');
-
-class Kerds extends Template {
-=======
 import { default as os } from 'os';
 import { default as https } from 'https';
 import { default as http } from 'http';
@@ -55,7 +31,6 @@ import { Database } from './functions/Database.js';
 import { RequestsLibrary } from './functions/Requests.js';
 
 class Kerds extends Base {
->>>>>>> working
     constructor() {
         super();
         this.states = {};

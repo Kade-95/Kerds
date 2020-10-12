@@ -101,8 +101,7 @@ class Kerds extends Base {
             if (this.static == true) {
                 this.sessionsManager.store(req, res);
                 filename = filename.replace('./', './public/');
-                console.log(filename);
-
+                
                 if (filename == './public/') {
                     res.writeHead(301, { 'Location': 'index.html' });
                     res.end();

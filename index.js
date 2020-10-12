@@ -13,12 +13,10 @@ let NeuralNetwork = require('./classes/NeuralNetwork');
 let Template = require('./classes/Template');
 let SessionsManager = require('./classes/SessionsManager');
 let Database = require('./functions/Database');
-let Sql = require('./functions/Sql');
 let arrayLibrary = require('./functions/Array');
 let objectLibrary = require('./functions/Objects');
 let mathLibrary = require('./functions/Math');
 let requestsLibrary = require('./functions/Requests');
-let Spider = require('./functions/Spider');
 let Compression = require('./functions/Compression');
 
 
@@ -249,14 +247,9 @@ module.exports = {
     SessionsManager,
     Database,
     Template,
-    Sql,
-    Spider,
     Compression
 }
 
 exports.printMsg = function () {
     console.log("This is a message from the demo package");
 }
-
-let k = new Kerds();
-

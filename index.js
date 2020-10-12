@@ -53,7 +53,8 @@ class Kerds extends Base {
             '.ttf': 'application/font-ttf',
             '.eot': 'application/vnd.ms-fontobject',
             '.otf': 'application/font-otf',
-            '.svg': 'application/image/svg+xml'
+            '.svg': 'application/image/svg+xml',
+            '.wasm': 'application/wasm'
         };
         this.appPages = [];
         this.handleRequests = () => { };
@@ -76,7 +77,6 @@ class Kerds extends Base {
         let tmp = filename.lastIndexOf('.');
         let ext = filename.slice(tmp).toLowerCase();
         let contentType = this.mimeTypes[ext];
-
         if (!this.isset(contentType)) {
             contentType = 'application/octet-stream';
         }
@@ -157,6 +157,7 @@ class Kerds extends Base {
             console.log(`Port ${params.port} is in use`)
         }).listen(params.port, '0.0.0.0', () => {
             console.log(`${params.protocol} Server Running on Port : ${params.port}`);
+            console.log('Url: ', `${params.protocol}://localhost:${params.port}`)
         });
 
         callback(server);

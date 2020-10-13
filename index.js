@@ -24,6 +24,9 @@ import {
     NeuralNetwork,
     Matrix,
     Template,
+    Components,
+    Compression,
+    ColorPicker,
 } from 'Base';
 
 import { SessionsManager } from './classes/SessionsManager.js';
@@ -101,7 +104,7 @@ class Kerds extends Base {
             if (this.static == true) {
                 this.sessionsManager.store(req, res);
                 filename = filename.replace('./', './public/');
-                
+
                 if (filename == './public/') {
                     res.writeHead(301, { 'Location': 'index.html' });
                     res.end();
@@ -259,6 +262,10 @@ export {
     Func,
     NeuralNetwork,
     Matrix,
+    Template,
+    Components,
+    Compression,
+    ColorPicker,
     SessionsManager,
     Database,
     Template,

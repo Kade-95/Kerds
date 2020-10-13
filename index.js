@@ -268,5 +268,4 @@ export {
     ColorPicker,
     SessionsManager,
     Database,
-    Template,
 }

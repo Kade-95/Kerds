@@ -4,9 +4,9 @@
   "description": "Backend Functionalities",
   "main": "index.js",
   "dependencies": {
-    "Base": "git+https://github.com/Kade-95/Base.git",
     "bcrypt": "^5.0.0",
     "jsdom": "^16.2.2",
+    "kerdbase": "git+https://github.com/Kade-95/Base.git",
     "mongodb": "^3.5.7",
     "mysql": "^2.18.1",
     "request": "^2.88.2"

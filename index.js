@@ -27,7 +27,7 @@ import {
     Components,
     Compression,
     ColorPicker,
-} from 'Base';
+} from 'kerdbase';
 
 import { SessionsManager } from './classes/SessionsManager.js';
 import { Database } from './functions/Database.js';

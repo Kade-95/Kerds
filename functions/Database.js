@@ -1,7 +1,7 @@
 import {
     ArrayLibrary,
     Func,
-} from 'Base';
+} from 'kerdbase';
 import { default as mongodb } from 'mongodb';
 const mongoClient = mongodb.MongoClient;
 

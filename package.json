@@ -1,5 +1,5 @@
 {
-  "name": "kerds",
+  "name": "@thekade/kerds",
   "version": "1.1.5",
   "description": "Backend Functionalities",
   "main": "index.js",
@@ -9,7 +9,8 @@
     "kerdbase": "git+https://github.com/Kade-95/Base.git",
     "mongodb": "^3.5.7",
     "mysql": "^2.18.1",
-    "request": "^2.88.2"
+    "request": "^2.88.2",
+    "webassembly": "^0.11.0"
   },
   "devDependencies": {},
   "scripts": {
@@ -20,7 +21,7 @@
     "major": "npm version major"
   },
   "author": "thekade",
-  "license": "ISC",
+  "license": "MIT",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Kade-95/Kerds.git"
@@ -39,5 +40,8 @@
   "bugs": {
     "url": "https://github.com/Kade-95/Kerds/issues"
   },
-  "homepage": "https://github.com/Kade-95/Kerds#readme"
+  "homepage": "https://github.com/Kade-95/Kerds#readme",
+  "directories": {
+    "test": "test"
+  }
 }

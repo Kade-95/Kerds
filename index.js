@@ -36,7 +36,6 @@ import { RequestsLibrary } from './functions/Requests.js';
 class Kerds extends Base {
     constructor() {
         super();
-        this.states = {};
         this.sessionsManager = new SessionsManager();
         this.request = RequestsLibrary();
         this.allowSessions = false;
@@ -85,10 +84,10 @@ class Kerds extends Base {
         }
 
         this.permit(req, res, allowed);
+        this.sessionsManager.getCookies(req);
 
         if (req.method.toLowerCase() == 'post') {
             // on post request
-            this.sessionsManager.getCookies(req);
             req.sessionId = this.sessionsManager.createNODESSID(res);
             req.res = res;
             req.extract = this.request.extract;
@@ -98,14 +97,15 @@ class Kerds extends Base {
             req.on('data', this.onPosting).on('end', this.onPosted);
         }
         else if (req.method.toLowerCase() == 'get') {
-            this.sessionsManager.getCookies(req);
             req.sessionId = this.sessionsManager.createNODESSID(res, true);
 
             if (this.static == true) {
-                this.sessionsManager.store(req, res);
-                filename = filename.replace('./', './public/');
+                if (this.allowSessions) {
+                    this.sessionsManager.store(req, res);
+                }
 
-                if (filename == './public/') {
+                filename = filename.replace('./', this.staticPath);
+                if (filename == this.staticPath) {
                     res.writeHead(301, { 'Location': 'index.html' });
                     res.end();
                 }
@@ -192,23 +192,14 @@ class Kerds extends Base {
         }
     }
 
-    saveState() {
-        let url = window.location.href;
-        this.states[url] = document.body.outerHTML;
-    }
-
-    getState() {
-        let url = window.location.href;
-        return this.states[url];
-    }
-
-    recordSession(params = { period: '', remember: '', server: { address: '', name: '', user: '', password: '' } }) {
+    recordSession(params = { period: '', remember: '', server: { address: '', name: '', user: '', password: '', local: true } }) {
         this.allowSessions = true;
 
         this.runParallel({
             start: this.sessionsManager.startSessions(params),
-            // clear: this.sessionsManager.clearOldSessions()
-        }, result => {
+            clear: this.sessionsManager.clearOldSessions()
+        }, () => {
+            console.log('Sessions are been recorded');
         });
     }
 
@@ -253,7 +244,7 @@ class Kerds extends Base {
 
     makeStatic(name) {
         this.static = true;
-        this.staticPath = name;
+        this.staticPath = `./${name}/`;
     }
 }
 

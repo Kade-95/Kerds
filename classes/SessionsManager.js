@@ -1,6 +1,6 @@
 import {
     Func, ObjectLibrary,
-} from 'kerdbase';
+} from '@thekade/base';
 
 import { Database } from '../functions/Database.js';
 import { Sessions } from '../classes/Sessions.js';

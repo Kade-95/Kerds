@@ -1,6 +1,6 @@
 import {
     Func,
-} from 'kerdbase';
+} from '@thekade/base';
 import { Database } from '../functions/Database.js';
 let func = new Func();
 let db;

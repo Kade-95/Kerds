@@ -4,6 +4,7 @@
   "description": "Backend Functionalities",
   "main": "index.js",
   "dependencies": {
+    "@thekade/base": "^1.0.1",
     "bcrypt": "^5.0.0",
     "jsdom": "^16.2.2",
     "kerdbase": "git+https://github.com/Kade-95/Base.git",

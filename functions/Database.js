@@ -1,7 +1,7 @@
 import {
     ArrayLibrary,
     Func,
-} from 'kerdbase';
+} from '@thekade/base';
 import { default as mongodb } from 'mongodb';
 const mongoClient = mongodb.MongoClient;
 
